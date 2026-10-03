@@ -1,0 +1,25 @@
+# Sahay-AI backend dependencies
+# Install with: pip install -r requirements.txt
+
+# API framework
+fastapi>=0.115,<1.0
+uvicorn[standard]>=0.32,<1.0
+pydantic>=2.9,<3.0
+
+# HTTP client & DigiLocker OAuth integration
+httpx>=0.27,<1.0
+
+# Engine 1 — OSM Overpass queries + Groq/Gemini SWOT generation
+requests>=2.32,<3.0
+groq>=0.9.0
+google-genai>=0.3,<1.0
+
+# Engine 3 — PostgreSQL + PostGIS (real path; in-memory fallback needs nothing extra)
+psycopg2-binary>=2.9,<3.0
+
+# Document Readiness Checker — OCR extraction
+pytesseract>=0.3.10,<1.0
+Pillow>=10.4,<12.0
+
+# Config loading
+python-dotenv>=1.0,<2.0
