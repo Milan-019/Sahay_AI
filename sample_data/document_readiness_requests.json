@@ -1,0 +1,66 @@
+{
+  "document_readiness_requests": [
+    {
+      "test_case": "Ready Case - DigiLocker Pre-verified + Required Documents Complete",
+      "endpoint": "/api/schemes/document-readiness",
+      "payload": {
+        "scheme_code": "NSFDC_MAHILA_SAMRIDHI",
+        "applicant_full_name": "Priya Sharma",
+        "applicant_date_of_birth": "1992-08-15",
+        "is_sc_st": true,
+        "digilocker_verified_documents": {
+          "aadhaar": true,
+          "pan": true,
+          "caste_certificate": true,
+          "income_certificate": true
+        },
+        "submitted_documents": [
+          {
+            "document_type": "BANK_PASSBOOK",
+            "image_base64": null,
+            "digilocker_fetched": false,
+            "manual_name": "Priya Sharma",
+            "manual_id_number": "SBI-62881923"
+          },
+          {
+            "document_type": "ADDRESS_PROOF",
+            "image_base64": null,
+            "digilocker_fetched": false,
+            "manual_name": "Priya Sharma",
+            "manual_id_number": "EPIC-CG0491823"
+          },
+          {
+            "document_type": "PASSPORT_PHOTO",
+            "image_base64": null,
+            "digilocker_fetched": false,
+            "manual_name": "Priya Sharma",
+            "manual_id_number": "PHOTO-001"
+          }
+        ]
+      }
+    },
+    {
+      "test_case": "Missing Documents Case - Stand-Up India Missing Greenfield Declaration & Business Plan",
+      "endpoint": "/api/schemes/document-readiness",
+      "payload": {
+        "scheme_code": "STAND_UP_INDIA_WOMEN",
+        "applicant_full_name": "Sunita Verma",
+        "applicant_date_of_birth": "1988-04-12",
+        "is_sc_st": false,
+        "digilocker_verified_documents": {
+          "aadhaar": true,
+          "pan": true
+        },
+        "submitted_documents": [
+          {
+            "document_type": "BANK_PASSBOOK",
+            "image_base64": null,
+            "digilocker_fetched": false,
+            "manual_name": "Sunita Verma",
+            "manual_id_number": "PNB-998231"
+          }
+        ]
+      }
+    }
+  ]
+}

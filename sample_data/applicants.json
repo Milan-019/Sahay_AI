@@ -1,0 +1,112 @@
+{
+  "applicants": [
+    {
+      "id": "app_001",
+      "persona": "Priya Sharma (Rural Woman Tailor)",
+      "description": "Rural woman entrepreneur seeking credit to expand a tailoring shop into a boutique with modern sewing machines. Low income, eligible for affirmative benefits.",
+      "request": {
+        "available_margin": 14000.0,
+        "is_women_entrepreneur": true,
+        "is_sc_st": true,
+        "is_greenfield": true,
+        "annual_family_income": 220000.0,
+        "is_rural": true,
+        "trade_category": "tailor",
+        "language": "hi"
+      },
+      "expected_best_scheme": "NSFDC_MAHILA_SAMRIDHI",
+      "expected_interest_rate": 0.04,
+      "expected_loan_amount": 126000.0
+    },
+    {
+      "id": "app_002",
+      "persona": "Ramesh Sahu (PM Vishwakarma Carpenter)",
+      "description": "Rural artisan with traditional carpentry background seeking credit for modern power tools and timber stock.",
+      "request": {
+        "available_margin": 10000.0,
+        "is_women_entrepreneur": false,
+        "is_sc_st": false,
+        "is_greenfield": true,
+        "annual_family_income": 180000.0,
+        "is_rural": true,
+        "trade_category": "carpentry",
+        "language": "hi"
+      },
+      "expected_best_scheme": "PMMY_MAHILA_UDYAMI",
+      "expected_interest_rate": 0.065,
+      "expected_loan_amount": 90000.0
+    },
+    {
+      "id": "app_003",
+      "persona": "Sunita Verma (Greenfield Food Processing Unit)",
+      "description": "Woman entrepreneur starting a commercial dairy and food processing unit requiring substantial term loan financing under Stand-Up India.",
+      "request": {
+        "available_margin": 250000.0,
+        "is_women_entrepreneur": true,
+        "is_sc_st": false,
+        "is_greenfield": true,
+        "annual_family_income": 650000.0,
+        "is_rural": true,
+        "trade_category": "dairy",
+        "language": "en"
+      },
+      "expected_best_scheme": "STAND_UP_INDIA_WOMEN",
+      "expected_interest_rate": 0.07,
+      "expected_loan_amount": 2250000.0
+    },
+    {
+      "id": "app_004",
+      "persona": "Ganesh Kurre (SC Agro-Fabrication Workshop)",
+      "description": "SC youth starting a greenfield welding and fabrication enterprise for agricultural implements in Dhamdha block.",
+      "request": {
+        "available_margin": 150000.0,
+        "is_women_entrepreneur": false,
+        "is_sc_st": true,
+        "is_greenfield": true,
+        "annual_family_income": 280000.0,
+        "is_rural": true,
+        "trade_category": "welding_fabrication",
+        "language": "hi"
+      },
+      "expected_best_scheme": "STAND_UP_INDIA_WOMEN",
+      "expected_interest_rate": 0.07,
+      "expected_loan_amount": 1350000.0
+    },
+    {
+      "id": "app_005",
+      "persona": "Lakshmi Narayanan (Semi-Urban Electronics Repair)",
+      "description": "General category technician starting a mobile and small appliances repair shop in Arang.",
+      "request": {
+        "available_margin": 40000.0,
+        "is_women_entrepreneur": false,
+        "is_sc_st": false,
+        "is_greenfield": true,
+        "annual_family_income": 320000.0,
+        "is_rural": true,
+        "trade_category": "electronics_repair",
+        "language": "ta"
+      },
+      "expected_best_scheme": "PMMY_MAHILA_UDYAMI",
+      "expected_interest_rate": 0.065,
+      "expected_loan_amount": 360000.0
+    },
+    {
+      "id": "app_006",
+      "persona": "Kavita Patil (Rural Beauty & Wellness Centre)",
+      "description": "Woman entrepreneur in Patan setting up a beauty parlour and training salon with interest subvention.",
+      "request": {
+        "available_margin": 25000.0,
+        "is_women_entrepreneur": true,
+        "is_sc_st": false,
+        "is_greenfield": true,
+        "annual_family_income": 240000.0,
+        "is_rural": true,
+        "trade_category": "beauty_parlour",
+        "language": "mr"
+      },
+      "expected_best_scheme": "PMMY_MAHILA_UDYAMI",
+      "expected_interest_rate": 0.065,
+      "expected_loan_amount": 225000.0
+    }
+  ]
+}

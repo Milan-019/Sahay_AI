@@ -1,0 +1,171 @@
+### ==========================================================================
+### Sahay-AI API Integration Test Collection
+### Base URL: http://localhost:8000
+### ==========================================================================
+
+@baseUrl = http://localhost:8000
+
+### 1. Root & Health Check
+GET {{baseUrl}}/
+Accept: application/json
+
+###
+GET {{baseUrl}}/health
+Accept: application/json
+
+
+### ==========================================================================
+### ENGINE 2: SCHEME MATCHING & PRECEDENCE (SIH26092)
+### ==========================================================================
+
+### 2. Match Schemes for Rural SC/ST Woman Tailor (NSFDC / Mudra Eligible)
+POST {{baseUrl}}/api/schemes/match
+Content-Type: application/json
+
+{
+  "available_margin": 14000.0,
+  "is_women_entrepreneur": true,
+  "is_sc_st": true,
+  "is_greenfield": true,
+  "annual_family_income": 220000.0,
+  "is_rural": true,
+  "trade_category": "tailor",
+  "language": "hi"
+}
+
+### 3. Match Schemes for Greenfield Woman Entrepreneur (Stand-Up India Eligible)
+POST {{baseUrl}}/api/schemes/match
+Content-Type: application/json
+
+{
+  "available_margin": 250000.0,
+  "is_women_entrepreneur": true,
+  "is_sc_st": false,
+  "is_greenfield": true,
+  "annual_family_income": 600000.0,
+  "is_rural": true,
+  "trade_category": "dairy",
+  "language": "en"
+}
+
+### 4. Calculate Quarterly Moratorium-Aware EMI for Matched Scheme
+POST {{baseUrl}}/api/schemes/match/NSFDC_MAHILA_SAMRIDHI/emi
+Content-Type: application/json
+
+{
+  "available_margin": 14000.0,
+  "is_women_entrepreneur": true,
+  "is_sc_st": true,
+  "is_greenfield": true,
+  "annual_family_income": 220000.0,
+  "is_rural": true,
+  "trade_category": "tailor",
+  "language": "hi"
+}
+
+
+### ==========================================================================
+### DIGILOCKER & DOCUMENT READINESS (SIH26092)
+### ==========================================================================
+
+### 5. DigiLocker PKCE Authorize URL Generation
+GET {{baseUrl}}/api/schemes/digilocker/authorize?state=demo_test_state_123
+Accept: application/json
+
+### 6. DigiLocker Token Verification & Document Sync (Mock Mode)
+POST {{baseUrl}}/api/schemes/digilocker/verify-and-sync
+Content-Type: application/json
+
+{
+  "code": "sample_mock_auth_code_xyz",
+  "code_verifier": "sample_pkce_code_verifier_1234567890_abcdef"
+}
+
+### 7. Document Readiness Evaluation
+POST {{baseUrl}}/api/schemes/document-readiness
+Content-Type: application/json
+
+{
+  "scheme_code": "NSFDC_MAHILA_SAMRIDHI",
+  "applicant_full_name": "Priya Sharma",
+  "applicant_date_of_birth": "1992-08-15",
+  "is_sc_st": true,
+  "digilocker_verified_documents": {
+    "aadhaar": true,
+    "pan": true,
+    "caste_certificate": true,
+    "income_certificate": true
+  },
+  "submitted_documents": [
+    {
+      "document_type": "BANK_PASSBOOK",
+      "manual_name": "Priya Sharma",
+      "manual_id_number": "SBI-12345678"
+    },
+    {
+      "document_type": "ADDRESS_PROOF",
+      "manual_name": "Priya Sharma",
+      "manual_id_number": "EPIC-987654"
+    },
+    {
+      "document_type": "PASSPORT_PHOTO",
+      "manual_name": "Priya Sharma"
+    }
+  ]
+}
+
+
+### ==========================================================================
+### ENGINE 1: HYPER-LOCAL FEASIBILITY & ADVISORY (SIH26091)
+### ==========================================================================
+
+### 8. Feasibility & SWOT Analysis (Patan Block - Tailor - Hindi)
+POST {{baseUrl}}/api/advisory/feasibility
+Content-Type: application/json
+
+{
+  "block_name": "patan",
+  "latitude": 21.0366,
+  "longitude": 81.5369,
+  "trade_category": "tailor",
+  "radius_meters": 5000,
+  "language": "hi"
+}
+
+### 9. Feasibility & SWOT Analysis (Dhamdha Block - Dairy - English)
+POST {{baseUrl}}/api/advisory/feasibility
+Content-Type: application/json
+
+{
+  "block_name": "dhamdha",
+  "latitude": 21.4468,
+  "longitude": 81.3142,
+  "trade_category": "dairy",
+  "radius_meters": 5000,
+  "language": "en"
+}
+
+
+### ==========================================================================
+### END-TO-END PIPELINE: FULL ADVISORY REPORT (Chains Engines 1, 2, and 3)
+### ==========================================================================
+
+### 10. End-to-End Full Advisory Report
+POST {{baseUrl}}/api/advisory/full-report
+Content-Type: application/json
+
+{
+  "block_name": "patan",
+  "latitude": 21.0366,
+  "longitude": 81.5369,
+  "trade_category": "tailor",
+  "available_margin": 14000.0,
+  "is_women_entrepreneur": true,
+  "is_sc_st": true,
+  "is_greenfield": true,
+  "annual_family_income": 220000.0,
+  "is_rural": true,
+  "language": "hi",
+  "applicant_full_name": "Priya Sharma",
+  "applicant_date_of_birth": "1992-08-15"
+}

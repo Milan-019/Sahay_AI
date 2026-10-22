@@ -1,0 +1,50 @@
+{
+  "description": "Mock responses for MeriPehchaan / DigiLocker OAuth sandbox integration (/api/schemes/digilocker/verify-and-sync)",
+  "mock_user_profile": {
+    "user": {
+      "name": "Priya Sharma",
+      "dob": "1992-08-15",
+      "gender": "F",
+      "digilocker_id": "dl-mock-usr-987654"
+    },
+    "digilocker_document_hints": {
+      "is_women_entrepreneur": true,
+      "has_linked_caste_certificate": true
+    },
+    "verified_documents": {
+      "aadhaar": true,
+      "pan": true,
+      "caste_certificate": true,
+      "income_certificate": false,
+      "udyam_registration": false
+    },
+    "raw_issued_items_count": 3,
+    "mock": true
+  },
+  "mock_issued_documents_details": [
+    {
+      "name": "Aadhaar Card",
+      "type": "ADHAR",
+      "issuer": "Unique Identification Authority of India (UIDAI)",
+      "date": "2021-03-14",
+      "uri": "in.gov.uidai-ADHAR-123456789012",
+      "status": "VERIFIED"
+    },
+    {
+      "name": "Permanent Account Number (PAN) Card",
+      "type": "PANCR",
+      "issuer": "Income Tax Department",
+      "date": "2019-11-20",
+      "uri": "in.gov.pan-PANCR-ABCDE1234F",
+      "status": "VERIFIED"
+    },
+    {
+      "name": "Caste Certificate",
+      "type": "CSTCR",
+      "issuer": "Revenue Department, Govt of Chhattisgarh",
+      "date": "2020-07-09",
+      "uri": "in.gov.cg.edistrict-CSTCR-CG202000981",
+      "status": "VERIFIED"
+    }
+  ]
+}

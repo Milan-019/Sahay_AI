@@ -1,0 +1,64 @@
+{
+  "feasibility_requests": [
+    {
+      "test_case": "Patan Block - Tailoring & Boutique Enterprise (Hindi)",
+      "payload": {
+        "block_name": "patan",
+        "latitude": 21.0366,
+        "longitude": 81.5369,
+        "trade_category": "tailor",
+        "radius_meters": 5000,
+        "language": "hi"
+      },
+      "context": "Evaluates feasibility in Patan block (Durg district, Census code 409). High female literacy (71.8%) and steady local demand across 41,230 households."
+    },
+    {
+      "test_case": "Dhamdha Block - Dairy & Animal Husbandry Enterprise (English)",
+      "payload": {
+        "block_name": "dhamdha",
+        "latitude": 21.4468,
+        "longitude": 81.3142,
+        "trade_category": "dairy",
+        "radius_meters": 5000,
+        "language": "en"
+      },
+      "context": "Evaluates feasibility in Dhamdha block (Durg district, Census code 409). Agricultural base with 67.4% main workers engaged in agriculture."
+    },
+    {
+      "test_case": "Arang Block - Carpentry & Furniture Unit (Tamil)",
+      "payload": {
+        "block_name": "arang",
+        "latitude": 21.1965,
+        "longitude": 81.9664,
+        "trade_category": "carpentry",
+        "radius_meters": 5000,
+        "language": "ta"
+      },
+      "context": "Evaluates feasibility in Arang block (Raipur district, Census code 410) with Tamil localized SWOT and audio script."
+    },
+    {
+      "test_case": "Abhanpur Block - Beauty & Wellness Parlour (Marathi)",
+      "payload": {
+        "block_name": "abhanpur",
+        "latitude": 21.0543,
+        "longitude": 81.7485,
+        "trade_category": "beauty_parlour",
+        "radius_meters": 5000,
+        "language": "mr"
+      },
+      "context": "Evaluates feasibility in Abhanpur block (Raipur district, Census code 410) with Marathi regional localization."
+    },
+    {
+      "test_case": "Durg Urban/Semi-Urban - Electronics & Mobile Repair (Hindi)",
+      "payload": {
+        "block_name": "durg",
+        "latitude": 21.1904,
+        "longitude": 81.2849,
+        "trade_category": "electronics_repair",
+        "radius_meters": 3000,
+        "language": "hi"
+      },
+      "context": "High-density semi-urban catchment area near Durg city center."
+    }
+  ]
+}
