@@ -9,15 +9,20 @@ Requires environment variables: GEMINI_API_KEY (Engine 1), DATABASE_URL
 (Engine 3's real path — optional, falls back to in-memory routing).
 """
 
+import sys
+import os
 from dotenv import load_dotenv
 from fastapi import FastAPI, Response
 from fastapi.responses import RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
 
+# Ensure the backend directory is in sys.path
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
 # Load environment variables from .env
 load_dotenv()
 
-from routers import sih_schemes, advisory
+from routers import sih_schemes, advisory, voice
 
 app = FastAPI(
     title="Sahay-AI API",
@@ -36,6 +41,7 @@ app.add_middleware(
 
 app.include_router(sih_schemes.router)
 app.include_router(advisory.router)
+app.include_router(voice.router)
 
 
 @app.get("/")
@@ -52,6 +58,8 @@ def root():
             "document_readiness": "/api/schemes/document-readiness",
             "feasibility_advisory": "/api/advisory/feasibility",
             "full_advisory_report": "/api/advisory/full-report",
+            "voice_tts": "/api/voice/tts",
+            "voice_status": "/api/voice/status",
         }
     }
 

@@ -11,7 +11,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
 from engine.feasibility import LocationInput, generate_feasibility_report
-from engine.finance import Applicant, match_schemes
+from engine.finance import Applicant, match_schemes, enrich_rural_emi_metrics
 from engine.spatial import route_application_in_memory
 from engine.document_readiness import (
     DeclaredIdentity,
@@ -27,10 +27,11 @@ router = APIRouter(prefix="/api/advisory", tags=["advisory"])
 
 class FeasibilityRequest(BaseModel):
     block_name: str
-    latitude: float
-    longitude: float
+    latitude: float = 21.0366
+    longitude: float = 81.5369
     trade_category: str
     radius_meters: int = 5000
+    language: str = "hi"  # "en", "hi", "mr", "ta"
 
 
 class FeasibilityResponse(BaseModel):
@@ -42,6 +43,8 @@ class FeasibilityResponse(BaseModel):
     opportunity_analysis: str
     pricing_guidance: str
     threats: list[str]
+    audio_script: str
+    language: str = "hi"
 
 
 @router.post("/feasibility", response_model=FeasibilityResponse)
@@ -49,18 +52,20 @@ def get_feasibility_report(request: FeasibilityRequest):
     """
     Module 1 endpoint: hyper-local feasibility + SWOT, grounded in
     Census demographics and live OSM competitor density.
-    Requires GEMINI_API_KEY to be set (see engine/feasibility.py).
+    Supports English, Hindi, Marathi, and Tamil.
     """
     location = LocationInput(
         block_name=request.block_name, latitude=request.latitude,
         longitude=request.longitude, trade_category=request.trade_category,
     )
     try:
-        report = generate_feasibility_report(location, request.radius_meters)
+        report = generate_feasibility_report(
+            location, request.radius_meters, language=request.language
+        )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except NotImplementedError as e:
-        raise HTTPException(status_code=503, detail=f"Gemini client not configured: {e}")
+        raise HTTPException(status_code=503, detail=f"LLM client not configured: {e}")
 
     return FeasibilityResponse(
         block_name=report.block_name,
@@ -71,19 +76,21 @@ def get_feasibility_report(request: FeasibilityRequest):
         opportunity_analysis=report.opportunity_analysis,
         pricing_guidance=report.pricing_guidance,
         threats=report.threats,
+        audio_script=report.audio_script,
+        language=report.language,
     )
 
 
 class DocumentSubmissionRequest(BaseModel):
-    document_type: str                   # must match a DocumentType enum value
+    document_type: str                   # must match a DocumentType enum or alias
     image_base64: str | None = None      # required unless digilocker_fetched
     digilocker_fetched: bool = False
 
 
 class FullReportRequest(BaseModel):
     block_name: str
-    latitude: float
-    longitude: float
+    latitude: float = 21.0366
+    longitude: float = 81.5369
     trade_category: str
     available_margin: float = Field(..., gt=0)
     is_women_entrepreneur: bool = False
@@ -91,10 +98,9 @@ class FullReportRequest(BaseModel):
     is_greenfield: bool = True
     annual_family_income: float | None = None
     is_rural: bool = True
+    language: str = "hi"  # "en", "hi", "mr", "ta"
 
-    # Document readiness inputs — all optional. If omitted, the readiness
-    # step is skipped entirely and document_readiness in the response is null
-    # (frontend should treat that as "not yet checked", not "ready").
+    # Document readiness inputs — all optional.
     applicant_full_name: str | None = None
     applicant_date_of_birth: str | None = None
     submitted_documents: list[DocumentSubmissionRequest] = Field(default_factory=list)
@@ -115,6 +121,9 @@ class FullReportResponse(BaseModel):
     routed_partner: dict | None
     routing_bypassed_log: list[dict]
     document_readiness: DocumentReadinessResponse | None
+    rural_metrics: dict
+    audio_script: str
+    language: str
 
 
 @router.post("/full-report", response_model=FullReportResponse)
@@ -131,11 +140,11 @@ def get_full_advisory_report(request: FullReportRequest):
         longitude=request.longitude, trade_category=request.trade_category,
     )
     try:
-        feasibility_report = generate_feasibility_report(location)
+        feasibility_report = generate_feasibility_report(location, language=request.language)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=f"Feasibility step failed: {e}")
     except NotImplementedError as e:
-        raise HTTPException(status_code=503, detail=f"Gemini client not configured: {e}")
+        raise HTTPException(status_code=503, detail=f"LLM client not configured: {e}")
 
     feasibility_response = FeasibilityResponse(
         block_name=feasibility_report.block_name,
@@ -146,6 +155,8 @@ def get_full_advisory_report(request: FullReportRequest):
         opportunity_analysis=feasibility_report.opportunity_analysis,
         pricing_guidance=feasibility_report.pricing_guidance,
         threats=feasibility_report.threats,
+        audio_script=feasibility_report.audio_script,
+        language=feasibility_report.language,
     )
 
     # --- Engine 2 ---
@@ -163,6 +174,12 @@ def get_full_advisory_report(request: FullReportRequest):
         raise HTTPException(status_code=400, detail=f"Scheme matching step failed: {e}")
 
     best_scheme = scheme_offers[0]  # already ranked lowest APR / longest moratorium
+    best_emi_calc = enrich_rural_emi_metrics(
+        quarterly_emi=(best_scheme.loan_amount * (best_scheme.effective_interest_rate / 4) * (1 + best_scheme.effective_interest_rate / 4)**(best_scheme.tenure_years*4 - round(best_scheme.moratorium_months/3))) / (((1 + best_scheme.effective_interest_rate / 4)**(best_scheme.tenure_years*4 - round(best_scheme.moratorium_months/3))) - 1),
+        moratorium_months=best_scheme.moratorium_months,
+        trade_category=request.trade_category,
+        language=request.language,
+    )
 
     # --- Engine 3 ---
     # NOTE: uses the in-memory routing path since this repo's seed data is
@@ -217,10 +234,6 @@ def get_full_advisory_report(request: FullReportRequest):
     if routing_result.allocated_partner:
         p = routing_result.allocated_partner
         routing_explanation = p.routing_explanation
-        # Annotate the routing explanation with document readiness, per the
-        # original design: a partner shouldn't receive an application that's
-        # document-incomplete. This doesn't block routing (the applicant
-        # still sees their nearest option) — it flags submission status.
         if document_readiness_response is not None and not document_readiness_response.is_ready:
             routing_explanation += (
                 f" NOTE: application not yet submission-ready — "
@@ -239,6 +252,9 @@ def get_full_advisory_report(request: FullReportRequest):
             "scheme_code": best_scheme.scheme_code, "scheme_name": best_scheme.scheme_name,
             "effective_interest_rate": best_scheme.effective_interest_rate,
             "loan_amount": best_scheme.loan_amount, "tenure_years": best_scheme.tenure_years,
+            "project_cost": best_scheme.project_cost, "margin_required": best_scheme.margin_required,
+            "moratorium_months": best_scheme.moratorium_months,
+            "rebates_applied": best_scheme.rebates_applied,
         },
         all_matched_schemes=[
             {"scheme_code": o.scheme_code, "scheme_name": o.scheme_name,
@@ -248,4 +264,7 @@ def get_full_advisory_report(request: FullReportRequest):
         routed_partner=routed_partner,
         routing_bypassed_log=routing_result.bypassed_branches_audit,
         document_readiness=document_readiness_response,
+        rural_metrics=best_emi_calc,
+        audio_script=feasibility_report.audio_script,
+        language=request.language,
     )

@@ -21,6 +21,7 @@ from dataclasses import dataclass, asdict, field
 from typing import Optional
 import os
 import json
+import re
 import requests
 
 
@@ -158,10 +159,12 @@ class FeasibilityReport:
     block_name: str
     demographics: dict
     competitor_density: CompetitorDensityResult
-    swot: dict                 # populated by Gemini
+    swot: dict                 # populated by Groq / Gemini
     opportunity_analysis: str
     pricing_guidance: str
     threats: list
+    audio_script: str          # conversational voice script in target language
+    language: str = "hi"
 
 
 # ---------------------------------------------------------------------------
@@ -209,7 +212,7 @@ def get_competitor_density(
 
     try:
         query = _build_overpass_query_with_geom(location.latitude, location.longitude, radius_meters, tags)
-        response = requests.post(OVERPASS_API_URL, data={"data": query}, timeout=30)
+        response = requests.post(OVERPASS_API_URL, data={"data": query}, timeout=5)
         response.raise_for_status()
         elements = response.json().get("elements", [])
 
@@ -278,8 +281,20 @@ def get_block_demographics(block_name: str) -> dict:
 SWOT_SYSTEM_PROMPT = """You are a rural business feasibility analyst for Sahay-AI.
 You will be given REAL, GROUNDED data: local demographic statistics and a live
 competitor count from OpenStreetMap. Do not invent numbers — reason only from
-the data provided. Respond ONLY with a single JSON object matching exactly
-this schema:
+the data provided.
+
+CRITICAL MULTILINGUAL INSTRUCTION:
+Generate the entire JSON response in the target language specified by target_language:
+- "hi": Hindi (हिन्दी in Devanagari script)
+- "mr": Marathi (मराठी in Devanagari script)
+- "ta": Tamil (தமிழ் in Tamil script)
+- "en": English
+
+Also generate an "audio_script": a warm, natural, 3-sentence conversational summary
+spoken in the target language (e.g., addressed to a rural sister/brother "नमस्ते दीदी / नमस्कार ताई / வணக்கம்")
+that summarizes the local market demand, competitor count, and words of encouragement in clear spoken words suitable for Text-to-Speech (TTS).
+
+Respond ONLY with a single JSON object matching exactly this schema:
 
 {
   "swot": {
@@ -290,7 +305,8 @@ this schema:
   },
   "opportunity_analysis": string,
   "pricing_guidance": string,
-  "threats_detail": [string, string, ...]
+  "threats_detail": [string, string, ...],
+  "audio_script": string
 }
 """
 
@@ -300,12 +316,21 @@ def _build_swot_user_prompt(
     trade_category: str,
     demographics: dict,
     competitor_density: CompetitorDensityResult,
+    language: str = "hi",
 ) -> str:
+    lang_name = {
+        "hi": "Hindi (हिन्दी)",
+        "mr": "Marathi (मराठी)",
+        "ta": "Tamil (தமிழ்)",
+        "en": "English",
+    }.get(language.lower(), "Hindi (हिन्दी)")
+
     live_note = "" if competitor_density.is_live else (
         "\nNOTE: competitor data below is a FALLBACK sample (OSM query failed), "
         "not live — caveat any competitor-specific claims accordingly.\n"
     )
     return f"""
+Target Language: {lang_name} (Code: {language})
 Block: {block_name}
 Proposed trade: {trade_category}
 
@@ -317,8 +342,61 @@ Grounded competitor data (OpenStreetMap Overpass, {competitor_density.radius_met
 - Breakdown by tag: {json.dumps(competitor_density.raw_tag_counts, indent=2)}
 
 Using only the data above, produce the SWOT, opportunity analysis, pricing
-guidance, and detailed threats per the required JSON schema.
+guidance, detailed threats, and colloquial audio_script in {lang_name} per the required JSON schema.
 """.strip()
+
+
+# ---------------------------------------------------------------------------
+# PII FIREWALL
+#
+# ARCHITECTURAL GUARANTEE: no LLM call in this codebase (Groq or Gemini)
+# ever receives applicant-identifying data. This isn't just a convention —
+# _build_swot_user_prompt()'s signature structurally cannot accept an
+# applicant name, DOB, or document data (it only takes block_name,
+# trade_category, aggregate demographics, and aggregate competitor
+# counts — none of which identify a person). This function is
+# defense-in-depth on top of that: a runtime check, run immediately
+# before every outbound LLM call, that scans the fully-assembled prompt
+# for PII-shaped patterns and refuses to send it if any are found. This
+# protects against a FUTURE regression (e.g. someone later adds an
+# applicant_name parameter to the prompt builder without realizing the
+# implication) — it should never actually trigger today, and if it does,
+# that itself is the signal that something upstream has silently
+# changed in a way that needs review before this is set in prod.
+# ---------------------------------------------------------------------------
+
+_AADHAAR_LIKE_PATTERN = re.compile(r"\b\d{4}\s?\d{4}\s?\d{4}\b")
+_PAN_LIKE_PATTERN = re.compile(r"\b[A-Z]{5}\d{4}[A-Z]\b")
+_PII_LABEL_PATTERN = re.compile(
+    r"\b(applicant[_ ]?name|full[_ ]?name|date[_ ]?of[_ ]?birth|\bdob\b|aadhaar|pan[_ ]?number)\s*[:=]",
+    re.IGNORECASE,
+)
+
+
+class PiiLeakGuardError(Exception):
+    """Raised when a prompt about to be sent to an LLM contains PII-shaped content."""
+
+
+def _assert_prompt_has_no_pii(prompt: str) -> None:
+    if _AADHAAR_LIKE_PATTERN.search(prompt):
+        raise PiiLeakGuardError(
+            "Refusing to send prompt to LLM: contains an Aadhaar-shaped "
+            "12-digit number. This prompt should never contain applicant "
+            "identity data — check what's being passed into the prompt builder."
+        )
+    if _PAN_LIKE_PATTERN.search(prompt):
+        raise PiiLeakGuardError(
+            "Refusing to send prompt to LLM: contains a PAN-shaped "
+            "identifier. This prompt should never contain applicant "
+            "identity data — check what's being passed into the prompt builder."
+        )
+    if _PII_LABEL_PATTERN.search(prompt):
+        raise PiiLeakGuardError(
+            "Refusing to send prompt to LLM: contains a field label "
+            "(name/DOB/Aadhaar/PAN) that suggests identity data leaked "
+            "into this prompt. This should never happen — check what's "
+            "being passed into the prompt builder."
+        )
 
 
 def _call_groq(system_prompt: str, user_prompt: str) -> str:
@@ -326,6 +404,8 @@ def _call_groq(system_prompt: str, user_prompt: str) -> str:
     Executes a structured JSON call using the Groq API (Primary LLM).
     Requires GROQ_API_KEY set in the environment.
     """
+    _assert_prompt_has_no_pii(system_prompt)
+    _assert_prompt_has_no_pii(user_prompt)
     api_key = os.environ.get("GROQ_API_KEY")
     if not api_key:
         raise ValueError("GROQ_API_KEY environment variable is missing.")
@@ -354,6 +434,9 @@ def _call_gemini(system_prompt: str, user_prompt: str) -> str:
     Executes a structured JSON call using the google-genai SDK (Fallback LLM).
     Requires GEMINI_API_KEY set in the environment.
     """
+    _assert_prompt_has_no_pii(system_prompt)
+    _assert_prompt_has_no_pii(user_prompt)
+
     api_key = os.environ.get("GEMINI_API_KEY")
     if not api_key:
         raise ValueError("GEMINI_API_KEY environment variable is missing.")
@@ -380,6 +463,7 @@ def _generate_grounded_mock_swot(
     trade_category: str,
     demographics: dict,
     competitor_density: CompetitorDensityResult,
+    language: str = "hi",
 ) -> dict:
     """
     Offline grounded heuristic SWOT synthesis used as a safety fallback
@@ -389,39 +473,112 @@ def _generate_grounded_mock_swot(
     households = demographics.get("total_households", 40000)
     density = demographics.get("population_density_per_sqkm", 300)
     comp_count = competitor_density.competitor_count
-    comp_level = "Low" if comp_count <= 2 else "Moderate" if comp_count <= 6 else "High"
+    lang = language.lower() if language in ("hi", "mr", "ta", "en") else "hi"
 
-    return {
-        "swot": {
-            "strengths": [
-                f"Established local consumer demand across {households:,} households in {block_name} ({district}).",
-                f"Favorable workforce demographic with {demographics.get('female_literacy_pct', 70)}% female literacy.",
-                f"Direct accessibility within primary market radius of {competitor_density.radius_meters}m.",
-            ],
-            "weaknesses": [
-                f"Initial brand differentiation required against {comp_count} existing local competitors.",
-                "Working capital constraints during initial setup cycles.",
-            ],
-            "opportunities": [
-                f"Underserved market density ({density} people/sqkm) indicates room for value-add {trade_category} services.",
-                f"{comp_level} local saturation allows targeted customer acquisition.",
-            ],
-            "threats": [
-                "Margin pressure from established local operators.",
-                "Fluctuations in raw material costs and household spending power.",
-            ],
-        },
-        "opportunity_analysis": (
-            f"Market in {block_name} supports new {trade_category} ventures with {comp_count} direct competitors mapped. "
-            f"Median household monthly spend (~₹{demographics.get('estimated_median_household_monthly_spend_inr', 7500):,}) "
-            f"reflects steady essential demand."
-        ),
-        "pricing_guidance": "Adopt competitive introductory pricing (5-10% below incumbent rates) with personalized local service.",
-        "threats_detail": [
-            f"Competitive pressure from {comp_count} existing local shops.",
-            "Raw material supply-chain disruptions in rural corridors.",
-        ],
-    }
+    if lang == "mr":
+        return {
+            "swot": {
+                "strengths": [
+                    f"{block_name} ({district}) मध्ये {households:,} कुटुंबांची स्थिर स्थानिक मागणी.",
+                    f"अनुकूल लोकसंख्या आणि {demographics.get('female_literacy_pct', 70)}% महिला साक्षरता प्रमाण.",
+                    f"{competitor_density.radius_meters} मीटर परिसरात थेट बाजारपेठ उपलब्ध.",
+                ],
+                "weaknesses": [
+                    f"विद्यमान {comp_count} स्थानिक दुकानांच्या तुलनेत स्वतःचे वेगळेपण निर्माण करणे आवश्यक.",
+                    "सुरुवातीच्या काळात खेळत्या भांडवलाची मर्यादा.",
+                ],
+                "opportunities": [
+                    f"लोकसंख्या घनतेनुसार ({density} व्यक्ती/चौ.किमी) दर्जेदार {trade_category} सेवेला मोठा वाव.",
+                    f"स्थानिक बाजारपेठेत नियमित ग्राहक जोडण्याची मोठी संधी.",
+                ],
+                "threats": [
+                    "प्रस्थापित दुकानदारांकडून दरांवर दबाव.",
+                    "कच्च्या मालाच्या किमतींमधील चढ-उतार.",
+                ],
+            },
+            "opportunity_analysis": f"{block_name} मध्ये फक्त {comp_count} प्रतिस्पर्धी असल्याने नवीन {trade_category} व्यवसायाला उत्तम वाव आहे.",
+            "pricing_guidance": "सुरुवातीला बाजारभावापेक्षा ५-१०% कमी दर आणि उत्तम स्थानिक सेवा ठेवा.",
+            "threats_detail": [f"विद्यमान {comp_count} स्थानिक दुकानांची स्पर्धा."],
+            "audio_script": f"नमस्कार ताई! तुमच्या {block_name} गावात {households:,} कुटुंबे आहेत आणि फक्त {comp_count} दुकाने आहेत. तुमच्या {trade_category} व्यवसायाला उत्तम वाव आहे. सरकारी योजनेचा लाभ घेऊन व्यवसाय सुरू करा!",
+        }
+    elif lang == "ta":
+        return {
+            "swot": {
+                "strengths": [
+                    f"{block_name} ({district}) பகுதியில் {households:,} குடும்பங்களின் நிலையான உள்ளூர் தேவை.",
+                    f"சாதகமான தொழிலாளர் சூழல் மற்றும் {demographics.get('female_literacy_pct', 70)}% பெண் எழுத்தறிவு.",
+                    f"{competitor_density.radius_meters}மீ சுற்றளவில் நேரடி சந்தை வசதி.",
+                ],
+                "weaknesses": [
+                    f"இருக்கும் {comp_count} கடைகளுக்கு மத்தியில் புதிய வாடிக்கையாளர்களை கவர வேண்டும்.",
+                    "தொடக்க கால சுழற்சி நிதி வரம்பு.",
+                ],
+                "opportunities": [
+                    f"மக்கள்தொகை அடர்த்தியின்படி ({density}/ச.கி.மீ) தரமான {trade_category} தொழிலுக்கு நல்ல வாய்ப்பு.",
+                    f"உள்ளூர் வாடிக்கையாளர்களை எளிதில் இணைக்கும் வாய்ப்பு.",
+                ],
+                "threats": [
+                    "பழைய வணிகர்களின் விலை போட்டி.",
+                    "மூலப்பொருள் விலை மாற்றங்கள்.",
+                ],
+            },
+            "opportunity_analysis": f"{block_name} பகுதியில் {comp_count} கடைகள் மட்டுமே உள்ளதால் உங்கள் தொழிலுக்கு நல்ல வாய்ப்புள்ளது.",
+            "pricing_guidance": "தொடக்கத்தில் சந்தை விலையை விட 5-10% குறைவான விலையும் சிறந்த சேவையும் வழங்கவும்.",
+            "threats_detail": [f"உள்ளூர் {comp_count} கடைகளின் நேரடி போட்டி."],
+            "audio_script": f"வணக்கம்! உங்கள் {block_name} பகுதியில் {households:,} குடும்பங்கள் உள்ளன, {comp_count} கடைகள் மட்டுமே உள்ளன. உங்கள் {trade_category} தொழிலுக்கு சிறந்த அரசு கடன் திட்டம் உள்ளது!",
+        }
+    elif lang == "en":
+        return {
+            "swot": {
+                "strengths": [
+                    f"Established local consumer demand across {households:,} households in {block_name} ({district}).",
+                    f"Favorable workforce demographic with {demographics.get('female_literacy_pct', 70)}% female literacy.",
+                    f"Direct accessibility within primary market radius of {competitor_density.radius_meters}m.",
+                ],
+                "weaknesses": [
+                    f"Initial brand differentiation required against {comp_count} existing local competitors.",
+                    "Working capital constraints during initial setup cycles.",
+                ],
+                "opportunities": [
+                    f"Underserved market density ({density} people/sqkm) indicates room for value-add {trade_category} services.",
+                    "Favorable local saturation allows targeted customer acquisition.",
+                ],
+                "threats": [
+                    "Margin pressure from established local operators.",
+                    "Fluctuations in raw material costs and household spending power.",
+                ],
+            },
+            "opportunity_analysis": f"Market in {block_name} supports new {trade_category} ventures with {comp_count} direct competitors mapped.",
+            "pricing_guidance": "Adopt competitive introductory pricing (5-10% below incumbent rates) with personalized local service.",
+            "threats_detail": [f"Competitive pressure from {comp_count} existing local shops."],
+            "audio_script": f"Hello! In {block_name}, there are {households:,} households and only {comp_count} existing competitors. Your proposed {trade_category} venture has strong feasibility with government loan support!",
+        }
+    else:  # Hindi default
+        return {
+            "swot": {
+                "strengths": [
+                    f"{block_name} ({district}) में {households:,} परिवारों की मजबूत स्थानीय उपभोक्ता मांग।",
+                    f"अनुकूल कार्यबल और {demographics.get('female_literacy_pct', 70)}% महिला साक्षरता दर।",
+                    f"{competitor_density.radius_meters} मीटर के प्राथमिक दायरे में सीधी बाजार पहुंच।",
+                ],
+                "weaknesses": [
+                    f"मौजूदा {comp_count} स्थानीय दुकानों के मुकाबले नई पहचान बनाने की जरूरत।",
+                    "शुरुआती दौर में कार्यशील पूंजी की सीमाएं।",
+                ],
+                "opportunities": [
+                    f"जनसंख्या घनत्व ({density} व्यक्ति/वर्ग किमी) के अनुसार {trade_category} के लिए बड़ा अवसर।",
+                    "स्थानीय ग्राहकों को सीधे जोड़ने की मजबूत संभावना।",
+                ],
+                "threats": [
+                    "पुराने स्थापित दुकानदारों से मूल्य प्रतिस्पर्धा।",
+                    "कच्चे माल की लागत में उतार-चढ़ाव।",
+                ],
+            },
+            "opportunity_analysis": f"{block_name} में सिर्फ {comp_count} प्रतियोगी हैं, जिससे नए {trade_category} व्यवसाय के लिए शानदार अवसर है।",
+            "pricing_guidance": "शुरुआत में बाजार दर से 5-10% कम दाम और व्यक्तिगत सेवा के साथ ग्राहक जोड़ें।",
+            "threats_detail": [f"मौजूदा {comp_count} स्थानीय दुकानों की प्रतिस्पर्धा।"],
+            "audio_script": f"नमस्ते दीदी! आपके {block_name} गांव में {households:,} परिवार हैं और यहां इस काम की केवल {comp_count} दुकानें हैं। आपके {trade_category} व्यवसाय के लिए सरकारी मुद्रा योजना में कम ब्याज पर लोन का बहुत अच्छा मौका है!",
+        }
 
 
 def generate_swot(
@@ -429,44 +586,67 @@ def generate_swot(
     trade_category: str,
     demographics: dict,
     competitor_density: CompetitorDensityResult,
+    language: str = "hi",
 ) -> dict:
-    user_prompt = _build_swot_user_prompt(block_name, trade_category, demographics, competitor_density)
+    user_prompt = _build_swot_user_prompt(
+        block_name, trade_category, demographics, competitor_density, language=language
+    )
 
     # 1. Primary: Groq API
     try:
         raw_response = _call_groq(SWOT_SYSTEM_PROMPT, user_prompt)
-        return json.loads(raw_response)
+        parsed = json.loads(raw_response)
+        if "audio_script" not in parsed:
+            parsed["audio_script"] = f"नमस्ते! {block_name} में आपके {trade_category} व्यवसाय के लिए अच्छी संभावनाएं हैं।"
+        return parsed
     except Exception as groq_err:
         pass
 
     # 2. Secondary: Gemini API Fallback
     try:
         raw_response = _call_gemini(SWOT_SYSTEM_PROMPT, user_prompt)
-        return json.loads(raw_response)
+        parsed = json.loads(raw_response)
+        if "audio_script" not in parsed:
+            parsed["audio_script"] = f"नमस्ते! {block_name} में आपके {trade_category} व्यवसाय के लिए अच्छी संभावनाएं हैं।"
+        return parsed
     except Exception as gemini_err:
         pass
 
     # 3. Offline Grounded Fallback (guarantees system resilience)
-    return _generate_grounded_mock_swot(block_name, trade_category, demographics, competitor_density)
+    return _generate_grounded_mock_swot(
+        block_name, trade_category, demographics, competitor_density, language=language
+    )
 
 
 # ---------------------------------------------------------------------------
 # Public entry point
 # ---------------------------------------------------------------------------
 
-def generate_feasibility_report(location: LocationInput, radius_meters: int = DEFAULT_RADIUS_METERS) -> FeasibilityReport:
+def generate_feasibility_report(
+    location: LocationInput,
+    radius_meters: int = DEFAULT_RADIUS_METERS,
+    language: str = "hi",
+) -> FeasibilityReport:
     demographics = get_block_demographics(location.block_name)
     competitor_density = get_competitor_density(location, radius_meters)
-    swot_payload = generate_swot(location.block_name, location.trade_category, demographics, competitor_density)
+    swot_payload = generate_swot(
+        location.block_name,
+        location.trade_category,
+        demographics,
+        competitor_density,
+        language=language,
+    )
 
     return FeasibilityReport(
         block_name=location.block_name,
         demographics=demographics,
         competitor_density=competitor_density,
-        swot=swot_payload["swot"],
-        opportunity_analysis=swot_payload["opportunity_analysis"],
-        pricing_guidance=swot_payload["pricing_guidance"],
-        threats=swot_payload["threats_detail"],
+        swot=swot_payload.get("swot", {}),
+        opportunity_analysis=swot_payload.get("opportunity_analysis", ""),
+        pricing_guidance=swot_payload.get("pricing_guidance", ""),
+        threats=swot_payload.get("threats_detail", []),
+        audio_script=swot_payload.get("audio_script", ""),
+        language=language,
     )
 
 
@@ -475,7 +655,11 @@ def generate_feasibility_report(location: LocationInput, radius_meters: int = DE
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    loc = LocationInput(block_name="Patan", latitude=21.19, longitude=81.28, trade_category="tailor")
+    import sys
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8")
+
+    loc = LocationInput(block_name="Patan", latitude=21.0366, longitude=81.5369, trade_category="tailor")
 
     print("=== Demographic baseline ===")
     print(json.dumps(get_block_demographics(loc.block_name), indent=2))
@@ -483,4 +667,14 @@ if __name__ == "__main__":
     print("\n=== Competitor density (live OSM, falls back if unreachable) ===")
     density = get_competitor_density(loc)
     print(json.dumps(asdict(density), indent=2))
-    print(f"\nis_live = {density.is_live}  <-- check this before trusting the numbers above")
+    print(f"\nis_live = {density.is_live}")
+
+    print("\n=== Generating Full Feasibility & SWOT Report (Hindi) ===")
+    try:
+        report = generate_feasibility_report(loc, radius_meters=5000, language="hi")
+        print("✓ Opportunity Analysis:", report.opportunity_analysis)
+        print("✓ Pricing Guidance:", report.pricing_guidance)
+        print("✓ Threats Count:", len(report.threats))
+        print("✓ Audio Script:", report.audio_script)
+    except Exception as err:
+        print("Report generation error:", err)

@@ -14,7 +14,9 @@ import httpx
 from pydantic import BaseModel, Field
 
 from engine.finance import (
+    AFFIRMATIVE_SCHEMES,
     Applicant,
+    SchemeTier,
     generate_emi_schedule,
     get_scheme_offer_by_code,
     match_schemes,
@@ -67,6 +69,8 @@ class ApplicantRequest(BaseModel):
       None, description="Required only for NSFDC eligibility check"
   )
   is_rural: bool = True
+  trade_category: str = "tailor"
+  language: str = "hi"  # "en", "hi", "mr", "ta"
 
 
 class SchemeOfferResponse(BaseModel):
@@ -90,6 +94,7 @@ class EmiScheduleResponse(BaseModel):
   repayment_quarters: int
   quarterly_emi: float
   total_repayment: float
+  rural_metrics: dict | None = None
 
 
 class DigiLockerTokenRequest(BaseModel):
@@ -101,6 +106,8 @@ class DocumentSubmissionRequest(BaseModel):
   document_type: str
   image_base64: str | None = None
   digilocker_fetched: bool = False
+  manual_name: str | None = None
+  manual_id_number: str | None = None
 
 
 class DocumentReadinessRequest(BaseModel):
@@ -125,6 +132,7 @@ class DocumentReadinessResponse(BaseModel):
   ocr_mismatch_count: int
   ocr_mismatch_details: list[dict]
   sourced_from_digilocker: list[str]
+  extracted_documents: list[dict] = Field(default_factory=list)
 
 
 # DigiLocker's verified_documents keys (see verify_and_sync_digilocker) ->
@@ -190,12 +198,44 @@ async def get_digilocker_auth_url(state: str = "sahay_state_123"):
   }
 
 
+_MOCK_DIGILOCKER_RESPONSE = {
+    "user": {
+        "name": "Priya Sharma",
+        "dob": "1970-12-31",
+        "gender": "F",
+        "digilocker_id": "mock-user-id-0001",
+    },
+    "digilocker_document_hints": {
+        "is_women_entrepreneur": True,
+        "has_linked_caste_certificate": True,
+    },
+    "verified_documents": {
+        "aadhaar": True,
+        "pan": True,
+        "caste_certificate": True,
+        "income_certificate": False,
+        "udyam_registration": False,
+    },
+    "raw_issued_items_count": 3,
+    "mock": True,  # always present when this path is used — never mistaken for a real response
+}
+
+
 @router.post("/digilocker/verify-and-sync")
 async def verify_and_sync_digilocker(body: DigiLockerTokenRequest):
   """Exchanges code for access token, then queries User Details and Issued Documents
 
   to auto-construct an Applicant profile and document checklist.
+
+  DEV MOCK MODE: set DIGILOCKER_MOCK_MODE=true in the environment to skip
+  the real DigiLocker sandbox entirely — no Aadhaar needed, no real OAuth
+  round-trip, no dependency on the sandbox being reachable. Also keeps
+  real PII completely out of your local dev/test loop, which matters
+  independent of convenience. Response always carries "mock": true.
   """
+  if os.getenv("DIGILOCKER_MOCK_MODE", "").lower() == "true":
+    return _MOCK_DIGILOCKER_RESPONSE
+
   token_payload = {
       "grant_type": "authorization_code",
       "code": body.code,
@@ -333,21 +373,42 @@ def get_emi_for_scheme(scheme_code: str, request: ApplicantRequest):
   canonical_code = resolve_scheme_code(scheme_code)
   offers = match_schemes(applicant)
   matched = next((o for o in offers if o.scheme_code == canonical_code), None)
-  
-  # If not in the filtered matched list, calculate offer directly for this scheme if valid
-  if matched is None:
-    matched = get_scheme_offer_by_code(canonical_code, applicant)
 
+  # Not in the eligible match list — check WHY before assuming "unknown code".
   if matched is None:
-    raise HTTPException(
-        status_code=404,
-        detail=(
-            f"Scheme '{scheme_code}' is not recognized. Supported schemes/aliases: "
-            "STAND_UP_INDIA, PMMY (MUDRA), NSFDC (MAHILA SAMRIDHI), MICRO_FINANCE, TERM_LOAN, PMEGP."
-        ),
+    is_recognized_code = (
+        canonical_code in (SchemeTier.MICRO_FINANCE.value, SchemeTier.TERM_LOAN.value)
+        or any(s.code == canonical_code for s in AFFIRMATIVE_SCHEMES)
     )
+    if not is_recognized_code:
+      raise HTTPException(
+          status_code=404,
+          detail=(
+              f"Scheme '{scheme_code}' is not recognized. Supported schemes/aliases: "
+              "STAND_UP_INDIA, PMMY (MUDRA), NSFDC (MAHILA SAMRIDHI), MICRO_FINANCE, TERM_LOAN, PMEGP."
+          ),
+      )
+    # Recognized code, but get_scheme_offer_by_code will return None if the
+    # applicant genuinely doesn't qualify — surface that as 403, not a
+    # fabricated offer (see finance.py's get_scheme_offer_by_code docstring).
+    matched = get_scheme_offer_by_code(canonical_code, applicant)
+    if matched is None:
+      raise HTTPException(
+          status_code=403,
+          detail=(
+              f"This applicant does not meet the eligibility criteria for "
+              f"'{canonical_code}' (e.g. loan amount out of range, category/"
+              f"income requirements not met, or wrong tier for this margin "
+              f"amount). Call /api/schemes/match to see schemes this "
+              f"applicant actually qualifies for."
+          ),
+      )
 
-  emi = generate_emi_schedule(matched)
+  emi = generate_emi_schedule(
+      matched,
+      trade_category=request.trade_category,
+      language=request.language,
+  )
   return EmiScheduleResponse(**emi)
 
 
@@ -405,6 +466,8 @@ def check_document_readiness(request: DocumentReadinessRequest):
     submissions.append(DocumentSubmission(
         document_type=doc_type, image_bytes=image_bytes,
         digilocker_fetched=doc_req.digilocker_fetched,
+        manual_name=doc_req.manual_name,
+        manual_id_number=doc_req.manual_id_number,
     ))
 
   identity = DeclaredIdentity(
@@ -419,9 +482,19 @@ def check_document_readiness(request: DocumentReadinessRequest):
       required_documents=[d.value for d in readiness.required_documents],
       missing_documents=[d.value for d in readiness.missing_documents],
       ocr_mismatch_count=len(readiness.ocr_flags),
-      ocr_mismatch_details=[
+       ocr_mismatch_details=[
           {"document_type": f.document_type.value, "extracted_name": f.extracted_name}
           for f in readiness.ocr_flags
       ],
       sourced_from_digilocker=sourced_from_digilocker,
+      extracted_documents=[
+          {
+              "document_type": ext.document_type.value,
+              "extracted_name": ext.extracted_name,
+              "extracted_id_number": ext.extracted_id_number,
+              "raw_text": ext.raw_text,
+              "name_matches_declared": ext.name_matches_declared,
+          }
+          for ext in readiness.ocr_extractions
+      ],
   )

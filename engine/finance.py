@@ -194,10 +194,14 @@ def _general_tier_offer(applicant: Applicant, project_cost: float, loan_amount: 
         base_rate = MICRO_FINANCE_BASE_RATE
         tenure = MICRO_FINANCE_TENURE_YEARS
         moratorium = MICRO_FINANCE_MORATORIUM_MONTHS
+        loan_amount = min(loan_amount, 125_000.0)
+        tier_name = "Micro Finance Scheme"
     else:
         base_rate = TERM_LOAN_BASE_RATE
         tenure = TERM_LOAN_TENURE_YEARS
         moratorium = TERM_LOAN_MORATORIUM_MONTHS
+        loan_amount = min(loan_amount, 4_500_000.0)
+        tier_name = "Term Loan Scheme"
 
     # Stack demographic subventions on the base rate down to the floor.
     rebate_bps = 0
@@ -213,7 +217,7 @@ def _general_tier_offer(applicant: Applicant, project_cost: float, loan_amount: 
 
     return SchemeOffer(
         scheme_code=tier.value,
-        scheme_name=tier.value.replace("_", " ").title(),
+        scheme_name=tier_name,
         project_cost=project_cost,
         loan_amount=loan_amount,
         margin_required=applicant.available_margin,
@@ -266,16 +270,38 @@ def resolve_scheme_code(code: str) -> str:
 
 
 def get_scheme_offer_by_code(scheme_code: str, applicant: Applicant) -> Optional[SchemeOffer]:
-    """Retrieve or compute a scheme offer for a specific canonical or aliased scheme code."""
+    """
+    Retrieve or compute a scheme offer for a specific canonical or aliased
+    scheme code — but ONLY if the applicant actually qualifies for it.
+
+    SECURITY/CORRECTNESS NOTE: this function previously returned a fully
+    computed offer (rate, EMI-ready loan amount) for ANY requested scheme
+    code, with no eligibility check — meaning an applicant could request
+    an EMI schedule for a scheme they don't qualify for (e.g. NSFDC
+    without being SC/ST) and receive a legitimate-looking result. For a
+    financial product, a false "you qualify" is worse than a 404. This
+    function now re-checks eligibility the same way match_schemes() does,
+    and returns None (not a silently-wrong offer) if the applicant isn't
+    actually eligible for the requested scheme.
+    """
     canonical = resolve_scheme_code(scheme_code)
     project_cost = applicant.available_margin / MARGIN_RATE
     loan_amount = project_cost * (1 - MARGIN_RATE)
 
     for scheme in AFFIRMATIVE_SCHEMES:
         if scheme.code == canonical:
+            if not scheme.eligible_fn(applicant, loan_amount):
+                return None  # NOT eligible — do not fabricate an offer
             return _affirmative_offer(scheme, applicant, project_cost, loan_amount)
 
     if canonical in (SchemeTier.MICRO_FINANCE.value, SchemeTier.TERM_LOAN.value):
+        actual_tier = _select_general_tier(project_cost)
+        if actual_tier.value != canonical:
+            # Applicant's project cost doesn't actually land in the
+            # requested tier (e.g. asked for MICRO_FINANCE but their
+            # margin computes to a Term Loan-sized project) — same
+            # principle: don't silently serve the wrong tier's numbers.
+            return None
         return _general_tier_offer(applicant, project_cost, loan_amount)
 
     return None
@@ -313,10 +339,137 @@ def match_schemes(applicant: Applicant) -> list[SchemeOffer]:
 # EMI generator
 # ---------------------------------------------------------------------------
 
-def generate_emi_schedule(offer: SchemeOffer) -> dict:
+# ---------------------------------------------------------------------------
+# Multilingual Rural EMI & Trade Analogies
+# ---------------------------------------------------------------------------
+
+TRADE_EARNING_BENCHMARKS = {
+    "tailor": {
+        "unit_price": 80,
+        "en": "custom garments tailored",
+        "hi": "सूट सिलने की कमाई",
+        "mr": "ड्रेस शिवण्याची कमाई",
+        "ta": "துணி தைக்கும் வருமானம்",
+    },
+    "dairy": {
+        "unit_price": 60,
+        "en": "litres of milk sold",
+        "hi": "लीटर दूध की बिक्री",
+        "mr": "लिटर दुधाची विक्री",
+        "ta": "லிட்டர் பால் விற்பனை",
+    },
+    "vegetable_vendor": {
+        "unit_price": 50,
+        "en": "kg fresh produce sold",
+        "hi": "किलो सब्ज़ी की बिक्री",
+        "mr": "किलो भाजीपाल्याची विक्री",
+        "ta": "கிலோ காய்கறி விற்பனை",
+    },
+    "retail": {
+        "unit_price": 40,
+        "en": "customers served at kirana",
+        "hi": "किराना ग्राहकों का औसत मुनाफ़ा",
+        "mr": "किराणा ग्राहकांचा नफा",
+        "ta": "மளிகை வாடிக்கையாளர் லாபம்",
+    },
+    "beauty_parlour": {
+        "unit_price": 120,
+        "en": "salon clients serviced",
+        "hi": "ग्राहकों की सेवा",
+        "mr": "ग्राहकांची सेवा",
+        "ta": "வாடிக்கையாளர் சேவை",
+    },
+    "electronics_repair": {
+        "unit_price": 150,
+        "en": "devices repaired",
+        "hi": "डिवाइस मरम्मत की कमाई",
+        "mr": "उपकरण दुरुस्ती कमाई",
+        "ta": "சாதன பழுதுபார்ப்பு வருமானம்",
+    },
+    "welding_fabrication": {
+        "unit_price": 250,
+        "en": "hours of fabrication work",
+        "hi": "घंटे की वेल्डिंग कारीगरी",
+        "mr": "वेल्डिंग कामाची मजुरी",
+        "ta": "வெல்டிங் வேலை வருமானம்",
+    },
+    "carpentry": {
+        "unit_price": 250,
+        "en": "hours of carpentry craft",
+        "hi": "घंटे की बढ़ईगीरी कारीगरी",
+        "mr": "सुतारकाम मजुरी",
+        "ta": "தச்சு வேலை வருமானம்",
+    },
+}
+
+MORATORIUM_BENEFIT_MESSAGES = {
+    "en": "No repayment required for the first {months} months (moratorium period).",
+    "hi": "शुरुआती {months} महीने बैंक को कोई किश्त नहीं देनी है (छूट अवधि)।",
+    "mr": "सुरुवातीच्या {months} महिन्यांत बँकेला कोणताही हप्ता भरावा लागणार नाही.",
+    "ta": "முதல் {months} மாதங்களுக்கு எந்த தவணையும் செலுத்த தேவையில்லை.",
+}
+
+
+def enrich_rural_emi_metrics(
+    quarterly_emi: float,
+    moratorium_months: int = 3,
+    trade_category: str = "tailor",
+    language: str = "hi",
+) -> dict:
+    """Enriches raw quarterly EMI with rural-accessible metrics and localized earning analogies."""
+    lang = language.lower() if language in ("en", "hi", "mr", "ta") else "hi"
+    monthly_emi = round(quarterly_emi / 3, 2)
+    daily_cost = round(monthly_emi / 30, 2)
+
+    benchmark = TRADE_EARNING_BENCHMARKS.get(
+        trade_category.lower(),
+        {
+            "unit_price": 60,
+            "en": "units of daily production",
+            "hi": "दैनिक कमाई की इकाइयां",
+            "mr": "दैनंदिन उत्पादन युनिट्स",
+            "ta": "தினசரி உற்பத்தி அலகுகள்",
+        },
+    )
+
+    units_needed = max(1, round(daily_cost / benchmark["unit_price"]))
+    trade_unit_text = benchmark.get(lang, benchmark["en"])
+
+    if lang == "hi":
+        analogy = f"रोज का लगभग ₹{daily_cost:,.0f} (लगभग {units_needed} {trade_unit_text})"
+    elif lang == "mr":
+        analogy = f"दररोजचे सुमारे ₹{daily_cost:,.0f} (सुमारे {units_needed} {trade_unit_text})"
+    elif lang == "ta":
+        analogy = f"தினசரி சுமார் ₹{daily_cost:,.0f} (சுமார் {units_needed} {trade_unit_text})"
+    else:
+        analogy = f"Approx ₹{daily_cost:,.0f}/day (equivalent to ~{units_needed} {trade_unit_text})"
+
+    moratorium_msg = MORATORIUM_BENEFIT_MESSAGES.get(lang, MORATORIUM_BENEFIT_MESSAGES["en"]).format(
+        months=moratorium_months
+    )
+
+    return {
+        "monthly_emi": monthly_emi,
+        "daily_cost": daily_cost,
+        "units_needed": units_needed,
+        "unit_description": trade_unit_text,
+        "daily_analogy": analogy,
+        "moratorium_benefit": moratorium_msg,
+    }
+
+
+# ---------------------------------------------------------------------------
+# EMI generator
+# ---------------------------------------------------------------------------
+
+def generate_emi_schedule(
+    offer: SchemeOffer,
+    trade_category: str = "tailor",
+    language: str = "hi",
+) -> dict:
     """
     Standard reducing-balance EMI, repayment starting after the moratorium,
-    expressed as a quarterly schedule per the design doc.
+    expressed as a quarterly schedule and enriched with rural daily metrics.
     """
     principal = offer.loan_amount
     annual_rate = offer.effective_interest_rate
@@ -335,6 +488,13 @@ def generate_emi_schedule(offer: SchemeOffer) -> dict:
         n = repayment_quarters
         quarterly_emi = principal * r * (1 + r) ** n / ((1 + r) ** n - 1)
 
+    rural_metrics = enrich_rural_emi_metrics(
+        quarterly_emi=quarterly_emi,
+        moratorium_months=offer.moratorium_months,
+        trade_category=trade_category,
+        language=language,
+    )
+
     return {
         "scheme_code": offer.scheme_code,
         "principal": round(principal, 2),
@@ -343,6 +503,7 @@ def generate_emi_schedule(offer: SchemeOffer) -> dict:
         "repayment_quarters": repayment_quarters,
         "quarterly_emi": round(quarterly_emi, 2),
         "total_repayment": round(quarterly_emi * repayment_quarters, 2),
+        "rural_metrics": rural_metrics,
     }
 
 
