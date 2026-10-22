@@ -2,11 +2,9 @@
 
 ### AI-Powered Business Advisory & Credit Navigation for Rural Micro-Entrepreneurs
 
-> **Aligned with Smart India Hackathon Themes:**
-> * **SIH26091:** AI-Driven Micro-Enterprise Business Advisory & SWOT Analysis
-> * **SIH26092:** Contextual Credit Navigation, Scheme Matching & Spatial Routing
-> 
-> 
+> **Core Capabilities:**
+> * **Business Advisory:** AI-Driven Micro-Enterprise Advisory & SWOT Analysis
+> * **Credit Navigation:** Contextual Scheme Matching, Harvest-Aligned EMIs & Spatial Routing 
 
 ---
 

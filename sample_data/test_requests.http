@@ -15,7 +15,7 @@ Accept: application/json
 
 
 ### ==========================================================================
-### ENGINE 2: SCHEME MATCHING & PRECEDENCE (SIH26092)
+### ENGINE 2: SCHEME MATCHING & PRECEDENCE
 ### ==========================================================================
 
 ### 2. Match Schemes for Rural SC/ST Woman Tailor (NSFDC / Mudra Eligible)
@@ -65,7 +65,7 @@ Content-Type: application/json
 
 
 ### ==========================================================================
-### DIGILOCKER & DOCUMENT READINESS (SIH26092)
+### DIGILOCKER & DOCUMENT READINESS
 ### ==========================================================================
 
 ### 5. DigiLocker PKCE Authorize URL Generation
@@ -116,7 +116,7 @@ Content-Type: application/json
 
 
 ### ==========================================================================
-### ENGINE 1: HYPER-LOCAL FEASIBILITY & ADVISORY (SIH26091)
+### ENGINE 1: HYPER-LOCAL FEASIBILITY & ADVISORY
 ### ==========================================================================
 
 ### 8. Feasibility & SWOT Analysis (Patan Block - Tailor - Hindi)

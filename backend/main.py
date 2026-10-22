@@ -1,7 +1,7 @@
 """
 main.py
-Sahay-AI FastAPI entrypoint. Wires the scheme-matching (SIH26092) and
-advisory (SIH26091) routers together, both ultimately calling into the
+Sahay-AI FastAPI entrypoint. Wires the scheme-matching and
+advisory routers together, both ultimately calling into the
 three engines in engine/.
 
 Run locally with: uvicorn main:app --reload --port 8000
@@ -22,7 +22,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 # Load environment variables from .env
 load_dotenv()
 
-from routers import sih_schemes, advisory, voice
+from routers import schemes, advisory, voice
 
 app = FastAPI(
     title="Sahay-AI API",
@@ -30,7 +30,7 @@ app = FastAPI(
     version="0.1.0",
 )
 
-# Loosened for hackathon dev; tighten allow_origins to the deployed
+# Development configuration; tighten allow_origins to the deployed
 # frontend URL(s) before this goes anywhere near production.
 app.add_middleware(
     CORSMiddleware,
@@ -39,7 +39,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(sih_schemes.router)
+app.include_router(schemes.router)
 app.include_router(advisory.router)
 app.include_router(voice.router)
 

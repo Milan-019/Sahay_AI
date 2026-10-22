@@ -1,6 +1,6 @@
-"""routers/sih_schemes.py
+"""routers/schemes.py
 
-Endpoints for SIH26092's user journey — scheme matching, EMI schedules,
+Endpoints for scheme matching, EMI schedules,
 and DigiLocker sandbox OAuth verification.
 Wraps engine/finance.py (Engine 2).
 """

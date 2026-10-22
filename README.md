@@ -10,11 +10,11 @@
 
 ---
 
-## 📌 Context: Smart India Hackathon (SIH)
+## 📌 Platform Focus: Rural Enterprise Empowerment
 
-Sahay-AI addresses two critical, complementary Smart India Hackathon problem statements:
-- **SIH26091:** AI-driven hyper-local enterprise feasibility, demand analysis, and advisory for small-scale rural ventures.
-- **SIH26092:** Credit navigation, automated government scheme tiering, document readiness verification, and channel partner branch allocation.
+Sahay-AI integrates two critical, complementary capabilities into an end-to-end platform:
+- **Enterprise Feasibility & Advisory:** AI-driven hyper-local market feasibility, competitor density analysis, and business advisory for small-scale rural ventures.
+- **Credit Navigation & Readiness:** Automated government scheme tiering, reducing-balance EMI schedules, document readiness verification, and channel partner branch allocation.
 
 Together, these modules form an end-to-end companion that guides a rural entrepreneur from **ideation** $\to$ **market validation** $\to$ **sovereign scheme pre-qualification** $\to$ **bank-ready documentation**.
 
@@ -140,7 +140,7 @@ sahayAI/
 │   │   └── rules.py            # Eligibility aliases and constants
 │   └── routers/
 │       ├── advisory.py         # /api/advisory (Feasibility & Full Report)
-│       └── sih_schemes.py      # /api/schemes (Matching, EMI, DigiLocker, Docs)
+│       └── schemes.py          # /api/schemes (Matching, EMI, DigiLocker, Docs)
 ├── frontend/                   # Next.js 14 frontend web app
 │   ├── package.json            # Frontend dependencies and scripts
 │   ├── tailwind.config.js      # Styling configuration
@@ -311,7 +311,7 @@ Executes the unified end-to-end flow: **Engine 1** (Feasibility) $\to$ **Engine 
 
 ---
 
-## 🏆 Key Innovations for Hackathon Evaluators
+## 🏆 Key Innovations & Architecture Highlights
 
 1. **Deterministic Rule Engine + Real Grounding:** Rather than asking an LLM to hallucinate government rules, our financial tiering and margin math run on deterministic, auditable Python logic with strict regulatory floors.
 2. **Algorithmic Bypass Audit Trail:** When bank branches are skipped due to zero quota or high NPA stress, the system preserves an auditable record explaining why the entrepreneur was routed elsewhere.

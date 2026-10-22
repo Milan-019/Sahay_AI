@@ -7,7 +7,7 @@ import VoiceInputButton from "../../components/VoiceInputButton";
 import { unlockAudio } from "../../lib/voiceAudio";
 import { buildAdvisorNarration } from "../../lib/narration";
 
-// Multi-lingual dictionary for Business Advisor (SIH26091)
+// Multi-lingual dictionary for Business Advisor
 const ADVISOR_I18N = {
   hi: {
     formNo: "प्रपत्र संख्या / Form No. BFA-88",

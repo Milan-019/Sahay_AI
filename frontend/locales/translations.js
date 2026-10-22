@@ -19,7 +19,7 @@ export const translations = {
     modeSelf: "Self-Service",
     modeAssisted: "Bank Sakhi / CSC Mode",
     
-    // Business Advisor (SIH26091)
+    // Business Advisor
     advisorHeading: "Hyper-Local Business Feasibility",
     advisorSub: "Census Demographics + Live OpenStreetMap Competitor Density + AI SWOT",
     selectBlock: "Select Rural Block",
@@ -34,7 +34,7 @@ export const translations = {
     threats: "Threats",
     pricingTitle: "Pricing Guidance",
     
-    // Scheme Matcher (SIH26092)
+    // Scheme Matcher
     schemeHeading: "Affirmative Government Scheme Matcher",
     marginLabel: "Your Available Savings / Margin (₹)",
     womenEnt: "Women Entrepreneur (Subvention eligible)",
@@ -114,7 +114,7 @@ export const translations = {
     modeSelf: "आवेदक स्वयं",
     modeAssisted: "बैंक सखी / CSC वीएलई मोड",
     
-    // Business Advisor (SIH26091)
+    // Business Advisor
     advisorHeading: "गाँव-स्तर व्यवसाय व्यवहार्यता (Feasibility)",
     advisorSub: "जनगणना डेटा + लाइव नक्शा (OSM) प्रतियोगी + AI SWOT",
     selectBlock: "अपना ब्लॉक/गाँव चुनें",
@@ -129,7 +129,7 @@ export const translations = {
     threats: "सावधानियां (Threats)",
     pricingTitle: "कीमत और कमाई की सलाह",
     
-    // Scheme Matcher (SIH26092)
+    // Scheme Matcher
     schemeHeading: "सरकारी ऋण योजना खोजें",
     marginLabel: "आपकी अपनी बचत / मार्जिन (₹)",
     womenEnt: "महिला उद्यमी (अतिरिक्त ब्याज छूट)",
@@ -209,7 +209,7 @@ export const translations = {
     modeSelf: "अर्जदार स्वतः",
     modeAssisted: "बँक सखी / CSC मोड",
     
-    // Business Advisor (SIH26091)
+    // Business Advisor
     advisorHeading: "स्थानिक व्यवसाय व्यवहार्यता (Feasibility)",
     advisorSub: "जनगणना आकडेवारी + थेट नकाशा (OSM) प्रतिस्पर्धी + AI SWOT",
     selectBlock: "तुमचा ब्लॉक/गाव निवडा",
@@ -224,7 +224,7 @@ export const translations = {
     threats: "धोके (Threats)",
     pricingTitle: "दर आणि नफ्याबाबत सल्ला",
     
-    // Scheme Matcher (SIH26092)
+    // Scheme Matcher
     schemeHeading: "शासकीय कर्ज योजना शोधा",
     marginLabel: "तुमची स्वतःची बचत / भांडवल (₹)",
     womenEnt: "महिला उद्योजिका (व्याज सवलत पात्र)",
@@ -304,7 +304,7 @@ export const translations = {
     modeSelf: "சுய சேவை",
     modeAssisted: "வங்கி சகி / CSC பயன்முறை",
     
-    // Business Advisor (SIH26091)
+    // Business Advisor
     advisorHeading: "உள்ளூர் தொழில் சாத்தியக்கூறு (Feasibility)",
     advisorSub: "மக்கள்தொகை கணக்கெடுப்பு + நேரடி வரைபட (OSM) கடைகள் + AI SWOT",
     selectBlock: "உங்கள் வட்டாரத்தை தேர்ந்தெடுக்கவும்",
@@ -319,7 +319,7 @@ export const translations = {
     threats: "சவால்கள் (Threats)",
     pricingTitle: "விலை மற்றும் லாப வழிகாட்டுதல்",
     
-    // Scheme Matcher (SIH26092)
+    // Scheme Matcher
     schemeHeading: "அரசு கடன் திட்டங்கள் கண்டறிதல்",
     marginLabel: "உங்கள் சொந்த சேமிப்பு (₹)",
     womenEnt: "பெண் தொழில்முனைவோர் (வட்டி மானியம்)",

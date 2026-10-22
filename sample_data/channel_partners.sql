@@ -1,5 +1,5 @@
 -- ============================================================================
--- Sahay-AI (SIH26092 / SIH26091) — Channel Partner Spatial Router (PostGIS)
+-- Sahay-AI — Channel Partner Spatial Router (PostGIS)
 -- Seed Data & Schema Definition: Chhattisgarh Pilot Corridor (Durg & Raipur)
 -- ============================================================================
 

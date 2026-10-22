@@ -1,7 +1,7 @@
 # Sahay-AI System Architecture & Technical Specifications
 
 **AI-Powered Hyper-Local Business Advisory & Sovereign Credit Navigation for Grassroots Entrepreneurs**  
-*Aligned with Smart India Hackathon Problem Statements: SIH26091 (Business Advisory) & SIH26092 (Credit Navigation)*
+*Integrated Platform for Grassroots Business Feasibility & Credit Access*
 
 ---
 
