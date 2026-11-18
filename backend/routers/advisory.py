@@ -12,7 +12,7 @@ from pydantic import BaseModel, Field
 
 from engine.feasibility import LocationInput, generate_feasibility_report
 from engine.finance import Applicant, match_schemes, enrich_rural_emi_metrics
-from engine.spatial import route_application_in_memory
+from engine.spatial import smart_route_application
 from engine.document_readiness import (
     DeclaredIdentity,
     DocumentSubmission,
@@ -34,6 +34,15 @@ class FeasibilityRequest(BaseModel):
     language: str = "hi"  # "en", "hi", "mr", "ta"
 
 
+class CompetitorPointOut(BaseModel):
+    osm_id: int | str = 0
+    lat: float
+    lon: float
+    name: str = "Local Competitor"
+    shop_type: str = "trade"
+    distance_km: str | None = None
+
+
 class FeasibilityResponse(BaseModel):
     block_name: str
     demographics: dict
@@ -45,6 +54,7 @@ class FeasibilityResponse(BaseModel):
     threats: list[str]
     audio_script: str
     language: str = "hi"
+    competitors: list[CompetitorPointOut] = Field(default_factory=list)
 
 
 @router.post("/feasibility", response_model=FeasibilityResponse)
@@ -78,6 +88,16 @@ def get_feasibility_report(request: FeasibilityRequest):
         threats=report.threats,
         audio_script=report.audio_script,
         language=report.language,
+        competitors=[
+            CompetitorPointOut(
+                osm_id=c.osm_id,
+                lat=c.lat,
+                lon=c.lon,
+                name=c.name,
+                shop_type=c.shop_type,
+            )
+            for c in report.competitor_density.competitors
+        ],
     )
 
 
@@ -157,6 +177,16 @@ def get_full_advisory_report(request: FullReportRequest):
         threats=feasibility_report.threats,
         audio_script=feasibility_report.audio_script,
         language=feasibility_report.language,
+        competitors=[
+            CompetitorPointOut(
+                osm_id=c.osm_id,
+                lat=c.lat,
+                lon=c.lon,
+                name=c.name,
+                shop_type=c.shop_type,
+            )
+            for c in feasibility_report.competitor_density.competitors
+        ],
     )
 
     # --- Engine 2 ---
@@ -182,11 +212,9 @@ def get_full_advisory_report(request: FullReportRequest):
     )
 
     # --- Engine 3 ---
-    # NOTE: uses the in-memory routing path since this repo's seed data is
-    # still a small placeholder set (see engine/spatial.py). Swap to
-    # route_application() (real PostGIS) once DATABASE_URL is wired and
-    # seeded with verified branch data.
-    routing_result = route_application_in_memory(
+    # Smart router automatically uses PostGIS when DATABASE_URL is configured,
+    # or falls back seamlessly to the in-memory spatial router.
+    routing_result = smart_route_application(
         applicant_lat=request.latitude, applicant_lon=request.longitude,
         scheme_code=best_scheme.scheme_code, loan_amount=best_scheme.loan_amount,
     )

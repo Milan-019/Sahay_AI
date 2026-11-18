@@ -139,11 +139,18 @@ def parse_voice_intent(req: ParseIntentRequest):
     field_list = "\n".join(f'- "{name}": {desc}' for name, desc in req.fields.items())
     system_prompt = (
         "You extract structured form values from a spoken transcript in an "
-        "Indian regional language. Respond ONLY with a single JSON object "
-        "whose keys are exactly the requested field names. Use null for any "
-        "field not clearly stated in the transcript — never guess. For "
-        "numeric fields, return a plain number (no currency symbols or "
-        "commas). Do not include any field not in the requested list."
+        "Indian regional language (Hindi, Marathi, Tamil, English, or Hinglish).\n"
+        "Respond ONLY with a single JSON object whose keys are exactly the requested field names.\n"
+        "CRITICAL EXTRACTION RULES:\n"
+        "1. Indian Numbers: Convert verbal Indian number words into plain integer numbers:\n"
+        "   - '2 लाख' / '2 lakh' / '2 lac' -> 200000\n"
+        "   - '50 हजार' / '50 hazar' / '50 thousand' / '50k' -> 50000\n"
+        "   - '1.5 लाख' / 'dedh lakh' -> 150000\n"
+        "   - Return plain numbers only, no commas or currency symbols (e.g. 50000, not '50,000' or '₹50,000').\n"
+        "2. Booleans: Return true or false as JSON booleans (not strings) if mentioned; use null if unmentioned or ambiguous.\n"
+        "3. Enums: Map spoken words to the closest allowed key specified in the field description (e.g. 'सिलाई' / 'sewing' / 'boutique' -> 'tailor'; 'दूध' / 'dairy' -> 'dairy'; 'दुकान' / 'किराना' -> 'retail').\n"
+        "4. Names: Extract clean person names without honorifics like 'श्री', 'श्रीमती', 'Mr.', 'Mrs.', 'Ji' (e.g. 'मेरा नाम मिलन है' -> 'Milan').\n"
+        "5. Unmentioned Fields: Return null for any field that is not stated or implied in the transcript. Never guess or hallucinate."
     )
     user_prompt = f"Transcript ({req.language}): \"{req.transcript}\"\n\nExtract these fields:\n{field_list}"
 

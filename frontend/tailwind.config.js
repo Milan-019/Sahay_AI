@@ -69,6 +69,8 @@ module.exports = {
         "outline-variant": "#d6c4b1"
       },
       fontFamily: {
+        "libertinus": ["\"Libertinus Serif\"", "Georgia", "Cambria", "\"Times New Roman\"", "Times", "serif"],
+        "serif": ["\"Libertinus Serif\"", "Georgia", "Cambria", "\"Times New Roman\"", "Times", "serif"],
         "label-ledger": ["IBM Plex Sans", "sans-serif"],
         "headline-sm": ["\"Source Serif 4\"", "serif"],
         "body-sm": ["IBM Plex Sans", "sans-serif"],

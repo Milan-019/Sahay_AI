@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Navbar from "../../components/Navbar";
 import VoiceSummaryPlayer from "../../components/VoiceSummaryPlayer";
 import VoiceInputButton from "../../components/VoiceInputButton";
@@ -569,10 +569,103 @@ const COMPANION_I18N = {
   },
 };
 
-const DAILY_EMI_FIXED = 160; // ₹4,800 monthly EMI / 30 days
+const DAILY_EMI_DEFAULT = 160; // default ₹4,800 monthly EMI / 30 days
 
 export default function CompanionPage() {
   const [lang, setLang] = useState("hi");
+  const [activeLoan, setActiveLoan] = useState({
+    schemeName: "Pradhan Mantri Mudra Yojana (PMMY) किशोर ऋण",
+    sanctionedAmount: 350000,
+    monthlyEmi: 4800,
+    dailyEmi: 160,
+    tradeCategory: "tailor",
+    applicantName: "Sunita Sahu",
+    isCustom: false,
+  });
+
+  // Sync language and dynamically inherit chosen loan from session on mount
+  useEffect(() => {
+    try {
+      const stored = sessionStorage.getItem("sahay-session-lang") || localStorage.getItem("sahay-preferred-lang");
+      if (stored) {
+        setLang(stored);
+      }
+    } catch (e) {}
+
+    const handleLangEvent = (e) => {
+      if (e.detail) {
+        setLang(e.detail);
+      }
+    };
+    window.addEventListener("sahay-language-change", handleLangEvent);
+
+    // Dynamically retrieve loan chosen from Scheme Matcher or Business Advisor
+    try {
+      const chosenLoanStr = sessionStorage.getItem("sahay-chosen-loan");
+      const schemeResultStr = sessionStorage.getItem("sahay-scheme-result");
+
+      if (chosenLoanStr) {
+        const parsed = JSON.parse(chosenLoanStr);
+        if (parsed && (parsed.monthlyEmi || parsed.loanAmount)) {
+          const monthly = Number(parsed.monthlyEmi) || Math.round((Number(parsed.loanAmount) || 350000) / 60);
+          const daily = Math.max(10, Math.round(monthly / 30));
+          setActiveLoan({
+            schemeName: parsed.schemeName || "Pradhan Mantri Mudra Yojana (PMMY)",
+            sanctionedAmount: Number(parsed.loanAmount) || 350000,
+            monthlyEmi: monthly,
+            dailyEmi: daily,
+            tradeCategory: parsed.tradeCategory || "tailor",
+            applicantName: parsed.applicantName || "Sunita Sahu",
+            location: parsed.location || "Patan",
+            branchName: parsed.branchName || "State Bank of India (SBI) — Patan Main Branch",
+            isCustom: true,
+          });
+          if (parsed.tradeCategory) {
+            setTradeCategory(parsed.tradeCategory);
+          }
+          return;
+        }
+      }
+
+      if (schemeResultStr) {
+        const parsedResult = JSON.parse(schemeResultStr);
+        const firstOffer = parsedResult.offers?.[0];
+        const emiSched = parsedResult.emiSchedule;
+        if (firstOffer) {
+          const monthly = emiSched?.quarterly_emi
+            ? Math.round(emiSched.quarterly_emi / 3)
+            : Math.round(firstOffer.loan_amount / ((firstOffer.tenure_years || 5) * 12));
+          const daily = Math.max(10, Math.round(monthly / 30));
+          setActiveLoan({
+            schemeName: firstOffer.scheme_name,
+            sanctionedAmount: firstOffer.loan_amount,
+            monthlyEmi: monthly,
+            dailyEmi: daily,
+            tradeCategory: parsedResult.tradeCategory || "tailor",
+            applicantName: parsedResult.applicantName || "Sunita Sahu",
+            isCustom: true,
+          });
+          if (parsedResult.tradeCategory) {
+            setTradeCategory(parsedResult.tradeCategory);
+          }
+        }
+      }
+    } catch (err) {
+      console.error("Could not sync loan to companion:", err);
+    }
+
+    return () => window.removeEventListener("sahay-language-change", handleLangEvent);
+  }, []);
+
+  const handleSetLang = (newLang) => {
+    setLang(newLang);
+    try {
+      sessionStorage.setItem("sahay-session-lang", newLang);
+      sessionStorage.setItem("sahay-session-chosen", "true");
+      localStorage.setItem("sahay-preferred-lang", newLang);
+      window.dispatchEvent(new CustomEvent("sahay-language-change", { detail: newLang }));
+    } catch (e) {}
+  };
   const [assistedMode, setAssistedMode] = useState(false);
   const [tradeCategory, setTradeCategory] = useState("tailor");
   const [voiceHeard, setVoiceHeard] = useState("");
@@ -601,8 +694,9 @@ export default function CompanionPage() {
   };
 
   // Computations
+  const dailyEmi = activeLoan.dailyEmi || DAILY_EMI_DEFAULT;
   const grossInflow = Math.max(0, unitCount) * Math.max(0, unitRate);
-  const netSurplus = grossInflow - DAILY_EMI_FIXED;
+  const netSurplus = grossInflow - dailyEmi;
   const isHealthy = netSurplus >= 0;
   const deficitAmount = Math.abs(netSurplus);
 
@@ -639,12 +733,12 @@ export default function CompanionPage() {
   // registration status) is placeholder content and is deliberately NOT narrated:
   // reading it aloud would present made-up status as the user's real loan.
   const getAudioScript = () =>
-    buildCompanionNarration({ lang, gross: grossInflow, emi: DAILY_EMI_FIXED, net: netSurplus });
+    buildCompanionNarration({ lang, gross: grossInflow, emi: dailyEmi, net: netSurplus });
 
   return (
     <div className="bg-surface font-body-md text-on-surface antialiased min-h-screen selection:bg-primary-fixed selection:text-on-primary-fixed">
       {/* Unified Spacious Stitch Navbar with Sharp Corners */}
-      <Navbar activePage="companion" lang={lang} setLang={setLang} />
+      <Navbar activePage="companion" lang={lang} setLang={handleSetLang} />
 
       <main className="w-full pt-20 bg-surface min-h-[calc(100vh-140px)]">
         <div className="flex flex-col w-full">
@@ -734,41 +828,73 @@ export default function CompanionPage() {
                   {/* PRIMARY VOICE INPUT — speak once, the form fills itself.
                       Typing stays fully available below. */}
                   <div className="border-2 border-[#845400] bg-[#fbebda]/50 p-5 flex flex-col items-center gap-3 rounded-none">
-                    <p className="font-sans font-bold text-base text-[#221a10] text-center">
-                      {lang === "en"
-                        ? "Tell us about today's work — we'll fill the form for you"
-                        : "आज का काम बोलकर बताएं — हम फ़ॉर्म भर देंगे"}
-                    </p>
+                    <div className="flex items-center gap-2">
+                      <span className="material-symbols-outlined text-[#845400] text-2xl">mic</span>
+                      <p className="font-sans font-bold text-base text-[#221a10] text-center">
+                        {lang === "en"
+                          ? "Voice-First Register: Tell us about today's work"
+                          : "बोलकर दैनिक काम दर्ज करें (Voice-First Register)"}
+                      </p>
+                    </div>
                     <VoiceInputButton
                       language={lang}
                       fields={{
-                        trade_category: "one of exactly: tailor, dairy, retail, vegetable_vendor, electronics_repair — closest match to the person's work (tailor = sewing/boutique, dairy = milk/cattle, retail = grocery/kirana shop, vegetable_vendor = selling vegetables/fruit, electronics_repair = mobile/electronics repair or CSC centre); null if unclear",
-                        unit_count: "how many units/items they sold or made today, as a plain number; null if not stated",
-                        unit_rate: "the price per unit in rupees, as a plain number; null if not stated",
+                        applicant_name: "the person's full name if stated; null if not mentioned",
+                        trade_category: "one of exactly: tailor, dairy, retail, vegetable_vendor, electronics_repair — closest match to the person's work (tailor = sewing/boutique/suits, dairy = milk/cattle/liters, retail = grocery/kirana shop/bills, vegetable_vendor = selling vegetables/fruit/kilos, electronics_repair = mobile/electronics repair or CSC centre/jobs); null if unclear",
+                        unit_count: "how many units/items/suits/liters/bills/kilos they sold or made today, as a plain number; null if not stated",
+                        unit_rate: "the price or rate per unit in rupees, as a plain number; null if not stated",
+                        gross_income: "the total money earned, total sales or gross revenue today in rupees, as a plain number; null if not stated",
                       }}
                       onTranscript={(text) => setVoiceHeard(text)}
                       onResult={(values) => {
                         const VALID_TRADES = ["tailor", "dairy", "retail", "vegetable_vendor", "electronics_repair"];
                         // Trade change resets units/rate to that trade's defaults, so
-                        // apply it FIRST — spoken numbers must be set after, or the
-                        // reset would silently wipe out what the person just said.
-                        if (VALID_TRADES.includes(values.trade_category)) handleTradeSelect(values.trade_category);
+                        // apply it FIRST — spoken numbers must be set after.
+                        if (VALID_TRADES.includes(values.trade_category)) {
+                          handleTradeSelect(values.trade_category);
+                        }
+                        if (values.applicant_name && typeof values.applicant_name === "string" && values.applicant_name.trim()) {
+                          setActiveLoan((prev) => ({ ...prev, applicantName: values.applicant_name.trim() }));
+                        }
                         const count = Math.round(Number(values.unit_count));
                         const rate = Math.round(Number(values.unit_rate));
+                        const gross = Math.round(Number(values.gross_income));
+
                         if (count > 0) setUnitCount(count);
                         if (rate > 0) setUnitRate(rate);
+
+                        // If user spoke total gross earnings without explicit unit and rate
+                        if (gross > 0 && !(count > 0 && rate > 0)) {
+                          const currentT = t.trades[values.trade_category || tradeCategory] || t.trades.tailor;
+                          const defRate = currentT.defaultRate || 250;
+                          if (rate > 0) {
+                            setUnitCount(Math.max(1, Math.round(gross / rate)));
+                          } else {
+                            setUnitRate(defRate);
+                            setUnitCount(Math.max(1, Math.round(gross / defRate)));
+                          }
+                        }
                       }}
                     />
-                    {voiceHeard && (
-                      <p className="text-sm text-[#514536] text-center max-w-md">
-                        <span className="font-bold">{lang === "en" ? "We heard: " : "हमने सुना: "}</span>
-                        &ldquo;{voiceHeard}&rdquo;
-                        <br />
-                        <span className="text-xs">
+                    {voiceHeard ? (
+                      <div className="mt-2 text-center space-y-1">
+                        <p className="text-sm text-[#514536] max-w-md mx-auto">
+                          <span className="font-bold">{lang === "en" ? "We heard: " : "हमने सुना: "}</span>
+                          &ldquo;{voiceHeard}&rdquo;
+                        </p>
+                        <p className="text-xs font-bold text-emerald-800 flex items-center justify-center gap-1">
+                          <span className="material-symbols-outlined text-[15px]">check_circle</span>
                           {lang === "en"
-                            ? "Check the boxes below — you can change anything that's wrong."
-                            : "नीचे के बॉक्स देखें — कुछ गलत हो तो बदल सकते हैं।"}
-                        </span>
+                            ? "Daily register updated automatically (Trade, Units, Rate)"
+                            : "दैनिक रजिस्टर स्वतः अपडेट हो गया (व्यवसाय, संख्या, दर)"}
+                        </p>
+                      </div>
+                    ) : (
+                      <p className="text-xs text-[#514536] text-center max-w-lg mt-1 bg-white/70 px-3 py-1.5 border border-[#d6c4b1]">
+                        <span className="font-bold text-[#845400]">{lang === "en" ? "Tip: " : "सुझाव: "}</span>
+                        {lang === "en"
+                          ? 'Speak naturally: e.g. "My name is Milan, today I stitched 5 suits at 250 rupees" or "Today I sold 20 liters of milk at 48 rupees"'
+                          : 'स्वाभाविक बोलें: उदा. "मेरा नाम मिलन है, आज मैंने 5 सूट 250 रुपये के हिसाब से सिले हैं" अथवा "आज 20 लीटर दूध 48 रुपये में बेचा"'}
                       </p>
                     )}
                   </div>
@@ -882,7 +1008,7 @@ export default function CompanionPage() {
                         <span className="text-[#845400]">₹{grossInflow.toLocaleString("en-IN")}</span>
                       </p>
                       <p className="text-[11px] text-[#514536] font-sans mt-1">
-                        दैनिक बैंक गुल्लक हिस्सा: <strong>₹{DAILY_EMI_FIXED}</strong> (₹4,800 / 30 दिन)
+                        दैनिक बैंक गुल्लक हिस्सा: <strong>₹{dailyEmi.toLocaleString("en-IN")}</strong> (₹{activeLoan.monthlyEmi.toLocaleString("en-IN")} / 30 दिन)
                       </p>
                     </div>
 
@@ -981,11 +1107,11 @@ export default function CompanionPage() {
                       <div className="py-3 z-10">
                         <span className="font-sans text-xs uppercase text-[#514536] block">{t.cardBLabel}</span>
                         <div className="font-serif text-3xl font-bold font-mono text-[#845400] mt-1">
-                          ₹{DAILY_EMI_FIXED.toLocaleString("en-IN")}
+                          ₹{dailyEmi.toLocaleString("en-IN")}
                         </div>
                       </div>
                       <div className="pt-2 border-t border-[#845400]/30 z-10 font-sans text-xs text-[#514536]">
-                        {t.cardBSub}
+                        (₹{activeLoan.monthlyEmi.toLocaleString("en-IN")} {lang === "en" ? "EMI ÷ 30 days" : "किश्त ÷ 30 दिन"})
                       </div>
                     </div>
 
@@ -1029,8 +1155,8 @@ export default function CompanionPage() {
                       </h4>
                       <p className="font-sans text-xs sm:text-sm text-[#221a10] mt-1 leading-relaxed">
                         {isHealthy
-                          ? t.healthGoodDesc.replace("{gross}", grossInflow.toLocaleString("en-IN")).replace("{emi}", DAILY_EMI_FIXED).replace("{net}", netSurplus.toLocaleString("en-IN"))
-                          : t.healthAlertDesc.replace("{gross}", grossInflow.toLocaleString("en-IN")).replace("{emi}", DAILY_EMI_FIXED).replace("{deficit}", deficitAmount.toLocaleString("en-IN"))
+                          ? t.healthGoodDesc.replace("{gross}", grossInflow.toLocaleString("en-IN")).replace("{emi}", dailyEmi.toLocaleString("en-IN")).replace("{net}", netSurplus.toLocaleString("en-IN"))
+                          : t.healthAlertDesc.replace("{gross}", grossInflow.toLocaleString("en-IN")).replace("{emi}", dailyEmi.toLocaleString("en-IN")).replace("{deficit}", deficitAmount.toLocaleString("en-IN"))
                         }
                       </p>
                     </div>
@@ -1043,7 +1169,7 @@ export default function CompanionPage() {
                       <span>{t.sweepSupported}</span>
                     </div>
                     <div className="flex items-center gap-3">
-                      <span className="font-mono text-[#221a10]">{t.monthlyProgressLabel} <strong>₹3,680 / ₹4,800</strong></span>
+                      <span className="font-mono text-[#221a10]">{t.monthlyProgressLabel} <strong>₹{Math.min(activeLoan.monthlyEmi, Math.round(dailyEmi * 23)).toLocaleString("en-IN")} / ₹{activeLoan.monthlyEmi.toLocaleString("en-IN")}</strong></span>
                       <div className="w-20 bg-[#f5e6d4] h-2 rounded-none overflow-hidden border border-[#d6c4b1]">
                         <div className="bg-[#845400] h-full" style={{ width: "76%" }}></div>
                       </div>
@@ -1057,8 +1183,9 @@ export default function CompanionPage() {
 
                   {/* Left: Active Loan Account Registry Card (7 Cols) */}
                   <div className="lg:col-span-7 bg-[#fff8f3] border-2 border-[#d6c4b1] p-5 sm:p-6 rounded-none flex flex-col justify-between relative shadow-sm">
-                    <div className="absolute top-3 right-3 border-2 border-[#4d6537] text-[#4d6537] px-2 py-0.5 font-mono text-[10px] uppercase font-bold tracking-wider rounded-none select-none">
-                      {t.regularAccountBadge}
+                    <div className="absolute top-3 right-3 border-2 border-[#4d6537] text-[#4d6537] px-2 py-0.5 font-mono text-[10px] uppercase font-bold tracking-wider rounded-none select-none flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#4d6537]"></span>
+                      <span>{activeLoan.isCustom ? (lang === "en" ? "Live Scheme Link" : "योजना से लिंक") : t.regularAccountBadge}</span>
                     </div>
 
                     <div>
@@ -1068,15 +1195,15 @@ export default function CompanionPage() {
                           <h3 className="font-serif text-base sm:text-lg text-[#221a10] font-bold">
                             {t.activeLoanTitle}
                           </h3>
-                          <span className="font-sans text-xs text-[#514536]">{t.activeLoanSub}</span>
+                          <span className="font-sans text-xs text-[#514536] font-semibold">{activeLoan.isCustom ? activeLoan.schemeName : t.activeLoanSub}</span>
                         </div>
                       </div>
 
                       <div className="grid grid-cols-2 sm:grid-cols-3 gap-y-4 gap-x-3 py-4 border-b border-[#d6c4b1] text-xs">
                         <div>
                           <span className="font-sans text-[10px] uppercase text-[#514536] block">{t.sanctionedLabel}</span>
-                          <span className="font-serif text-lg font-bold text-[#845400] font-mono">{t.sanctionedVal}</span>
-                          <span className="text-[11px] text-[#514536] block">{t.tradeVal}</span>
+                          <span className="font-serif text-lg font-bold text-[#845400] font-mono">₹{activeLoan.sanctionedAmount.toLocaleString("en-IN")}</span>
+                          <span className="text-[11px] text-[#514536] block font-medium">{currentTrade?.title || t.tradeVal}</span>
                         </div>
                         <div>
                           <span className="font-sans text-[10px] uppercase text-[#514536] block">{t.disbursedLabel}</span>
@@ -1085,12 +1212,12 @@ export default function CompanionPage() {
                         </div>
                         <div className="col-span-2 sm:col-span-1">
                           <span className="font-sans text-[10px] uppercase text-[#514536] block">{t.bankBranchLabel}</span>
-                          <span className="font-sans text-xs font-bold text-[#221a10] block">{t.bankBranchVal}</span>
-                          <span className="text-[11px] text-[#514536]">{t.bankBranchSub}</span>
+                          <span className="font-sans text-xs font-bold text-[#221a10] block">{activeLoan.branchName || t.bankBranchVal}</span>
+                          <span className="text-[11px] text-[#514536]">{activeLoan.location ? `${activeLoan.location} Corridor` : t.bankBranchSub}</span>
                         </div>
                         <div>
                           <span className="font-sans text-[10px] uppercase text-[#514536] block">{t.nextEmiLabel}</span>
-                          <span className="font-serif text-lg font-bold text-[#845400] font-mono">{t.nextEmiVal}</span>
+                          <span className="font-serif text-lg font-bold text-[#845400] font-mono">₹{activeLoan.monthlyEmi.toLocaleString("en-IN")}</span>
                           <span className="text-[10px] text-[#ba1a1a] font-bold block">{t.nextEmiDue}</span>
                         </div>
                         <div>
@@ -1414,26 +1541,6 @@ export default function CompanionPage() {
           </div>
         </div>
       </main>
-
-      {/* Footer */}
-      <footer className="w-full bg-[#fbebda] border-t border-[#d6c4b1] py-8 mt-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex flex-col gap-1 text-center md:text-left">
-            <div className="flex items-center justify-center md:justify-start gap-2">
-              <span className="material-symbols-outlined text-[#845400] text-[20px]">verified</span>
-              <span className="font-serif text-sm font-semibold text-[#221a10]">{t.footerTitle}</span>
-            </div>
-            <p className="font-sans text-xs text-[#514536] max-w-xl">{t.footerDesc}</p>
-          </div>
-          <div className="flex items-center gap-6 font-sans text-xs uppercase text-[#514536]">
-            <div className="flex items-center gap-1.5">
-              <span className="material-symbols-outlined text-[#4d6537] text-[18px]">lock</span>
-              <span>Suraksha Code: CSC-VERIFIED</span>
-            </div>
-            <span>© 2026 Sahay-AI Ledger</span>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }

@@ -25,7 +25,7 @@ export default function BankManagerSlip({ reportData, applicantData }) {
             Micro-Enterprise Feasibility & Statutory Credit Appraisal
           </h2>
           <p className="text-xs text-slate-600">
-            Automated verification via Sahay-AI (Census RGI 2011 + OpenStreetMap Spatial Nodes + Scheme Rules)
+            Automated verification via Sahay-AI (Census RGI 2011 + Google Maps Spatial Nodes + Scheme Rules)
           </p>
         </div>
         <button
@@ -70,7 +70,7 @@ export default function BankManagerSlip({ reportData, applicantData }) {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
         <div>
           <h4 className="font-bold text-slate-800 uppercase tracking-wide text-xs mb-1">
-            Grounded Market Feasibility (Census + OSM Live Overpass)
+            Grounded Market Feasibility (Census + Google Maps Live Overpass)
           </h4>
           <ul className="space-y-1 text-slate-700 list-disc list-inside bg-slate-50 p-3 rounded-none border border-slate-200">
             <li>

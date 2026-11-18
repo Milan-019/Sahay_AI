@@ -8,10 +8,10 @@ const NAVBAR_I18N = {
     appTitle: "सहाय",
     subTitle: "Sahay-AI",
     folio: "Khatiyan Folio: 2024-SU/RUR-9021",
-    navHome: "होम (Home)",
-    nav1: "1. योजना चयन (Scheme Matcher)",
-    nav2: "2. व्यापार सलाहकार (Business Advisor)",
-    nav3: "3. ऋण साथी (Companion)",
+    navHome: "होम",
+    nav1: "योजना चयन",
+    nav2: "व्यापार सलाहकार",
+    nav3: "ऋण साथी",
     cscHelpline: "CSC हेल्पलाइन",
     phone: "1800-202-0044",
   },
@@ -19,10 +19,10 @@ const NAVBAR_I18N = {
     appTitle: "सहाय",
     subTitle: "Sahay-AI",
     folio: "Khatiyan Folio: 2024-SU/RUR-9021",
-    navHome: "मुख्यपृष्ठ (Home)",
-    nav1: "1. योजना निवड (Scheme Matcher)",
-    nav2: "2. व्यवसाय सल्लागार (Business Advisor)",
-    nav3: "3. कर्ज मित्र (Companion)",
+    navHome: "मुख्यपृष्ठ",
+    nav1: "योजना निवड",
+    nav2: "व्यवसाय सल्लागार",
+    nav3: "कर्ज मित्र",
     cscHelpline: "CSC हेल्पलाइन",
     phone: "1800-202-0044",
   },
@@ -30,10 +30,10 @@ const NAVBAR_I18N = {
     appTitle: "सहाय",
     subTitle: "Sahay-AI",
     folio: "Khatiyan Folio: 2024-SU/RUR-9021",
-    navHome: "முகப்பு (Home)",
-    nav1: "1. திட்ட தேர்வு (Scheme Matcher)",
-    nav2: "2. வணிக ஆலோசகர் (Business Advisor)",
-    nav3: "3. கடன் தோழன் (Companion)",
+    navHome: "முகப்பு",
+    nav1: "திட்ட தேர்வு",
+    nav2: "வணிக ஆலோசகர்",
+    nav3: "கடன் தோழன்",
     cscHelpline: "CSC உதவி எண்",
     phone: "1800-202-0044",
   },
@@ -42,19 +42,19 @@ const NAVBAR_I18N = {
     subTitle: "Sahay-AI",
     folio: "Khatiyan Folio: 2024-SU/RUR-9021",
     navHome: "Home",
-    nav1: "1. Scheme Matcher",
-    nav2: "2. Business Advisor",
-    nav3: "3. Loan Companion",
+    nav1: "Scheme Matcher",
+    nav2: "Business Advisor",
+    nav3: "Loan Companion",
     cscHelpline: "CSC Helpline",
     phone: "1800-202-0044",
   },
 };
 
 const LANGUAGES = [
-  { code: "hi", label: "🌐 हिन्दी (Hindi)" },
-  { code: "mr", label: "🌐 मराठी (Marathi)" },
-  { code: "ta", label: "🌐 தமிழ் (Tamil)" },
-  { code: "en", label: "🌐 English (Official)" },
+  { code: "en", label: "English" },
+  { code: "hi", label: "हिन्दी" },
+  { code: "mr", label: "मराठी" },
+  { code: "ta", label: "தமிழ்" },
 ];
 
 export default function Navbar({ activePage = "", lang = "hi", setLang }) {
@@ -72,111 +72,124 @@ export default function Navbar({ activePage = "", lang = "hi", setLang }) {
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+
+    const handleLangChange = (e) => {
+      if (e.detail && setLang) {
+        setLang(e.detail);
+      }
+    };
+    window.addEventListener("sahay-language-change", handleLangChange);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      window.removeEventListener("sahay-language-change", handleLangChange);
+    };
+  }, [setLang]);
 
   const handleSelectLanguage = (code) => {
     if (setLang) {
       setLang(code);
     }
+    try {
+      sessionStorage.setItem("sahay-session-lang", code);
+      sessionStorage.setItem("sahay-session-chosen", "true");
+      localStorage.setItem("sahay-preferred-lang", code);
+      window.dispatchEvent(new CustomEvent("sahay-language-change", { detail: code }));
+    } catch (e) {}
     setLangMenuOpen(false);
   };
 
   const navItems = [
-    { key: "scheme-matcher", href: "/scheme-matcher", label: t.nav1, icon: "account_balance" },
-    { key: "business-advisor", href: "/business-advisor", label: t.nav2, icon: "trending_up" },
-    { key: "companion", href: "/companion", label: t.nav3, icon: "handshake" },
+    { key: "business-advisor", href: "/business-advisor", label: t.nav2 },
+    { key: "scheme-matcher", href: "/scheme-matcher", label: t.nav1 },
+    { key: "companion", href: "/companion", label: t.nav3 },
   ];
 
   return (
-    <header className="fixed top-0 left-0 right-0 w-full z-50 bg-[#fff8f3]/95 backdrop-blur-md border-b border-[#d6c4b1] shadow-xs">
+    <header className="fixed top-0 left-0 right-0 w-full z-50 bg-[#fffbf7]/90 backdrop-blur-md border-b border-[#e8dfcf]/60 transition-all">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="h-20 flex items-center justify-between gap-6 sm:gap-8">
 
-          {/* Brand Logo & Title */}
-          <Link href="/" className="flex items-center gap-3.5 group flex-shrink-0">
-            <div className="flex items-center justify-center w-12 h-12 rounded-none overflow-hidden border border-[#d6c4b1] shadow-xs bg-white group-hover:border-[#845400] group-hover:shadow-sm transition-all p-1">
-              <img
-                src="/S_logo.png"
-                alt="Sahay-AI Logo"
-                className="w-full h-full object-contain rounded-none"
-              />
-            </div>
+          {/* Clean Brand Identity (No enclosing box border) */}
+          <Link
+            href="/"
+            className="flex items-center gap-3.5 group flex-shrink-0 p-1.5 rounded-2xl transition-all duration-300 hover:shadow-[0_0_20px_rgba(217,119,6,0.25)] hover:bg-[#fff4e8]/60"
+          >
+            <img
+              src="/S_logo.png"
+              alt="Sahay-AI Logo"
+              className="w-10 h-10 object-contain transition-transform duration-300 group-hover:scale-105"
+            />
             <div className="flex flex-col">
-              <div className="flex items-center gap-2">
-                <span className="font-serif text-xl sm:text-2xl font-bold text-[#221a10] tracking-tight group-hover:text-[#845400] transition-colors">
-                  {t.appTitle}
-                </span>
-              </div>
-              <span className="text-xs uppercase font-sans tracking-wider text-[#514536] font-medium">
+              <span className="font-serif text-xl sm:text-2xl font-normal text-[#221a10] tracking-tight group-hover:text-[#845400] transition-colors leading-tight">
+                {t.appTitle}
+              </span>
+              <span className="text-[11px] uppercase font-sans tracking-wider text-[#736555] font-medium mt-0.5">
                 {t.subTitle}
               </span>
             </div>
           </Link>
 
-          {/* Navigation Links - Desktop with Generous Spacing & Sharp Square Corners */}
-          <nav className="hidden lg:flex items-center gap-4 xl:gap-6">
+          {/* Clean Desktop Navigation Links (No box divs, no icons, ambient glow on hover) */}
+          <nav className="hidden lg:flex items-center gap-2 xl:gap-4">
             {navItems.map((item) => {
               const isActive = activePage === item.key;
               return (
                 <Link
                   key={item.key}
                   href={item.href}
-                  className={`flex items-center gap-2 px-4 xl:px-5 py-2.5 rounded-none text-xs xl:text-sm font-sans font-semibold tracking-wide transition-all ${
+                  className={`px-4 xl:px-5 py-2 rounded-full text-xs xl:text-sm font-sans font-medium tracking-wide transition-all duration-300 ${
                     isActive
-                      ? "bg-[#f5e6d4] text-[#845400] border border-[#845400]/30 shadow-xs ring-1 ring-[#845400]/20"
-                      : "text-[#514536] hover:text-[#221a10] hover:bg-[#fbebda] border border-transparent"
+                      ? "text-[#845400] bg-[#fff0db] font-semibold shadow-[0_0_18px_rgba(217,119,6,0.3)] ring-1 ring-[#845400]/25"
+                      : "text-[#514536] hover:text-[#845400] hover:bg-[#fff4e8] hover:shadow-[0_0_20px_rgba(217,119,6,0.35)]"
                   }`}
                 >
-                  <span className={`material-symbols-outlined text-[18px] ${isActive ? "text-[#845400]" : "text-[#486172]"}`}>
-                    {item.icon}
-                  </span>
-                  <span>{item.label}</span>
+                  {item.label}
                 </Link>
               );
             })}
           </nav>
 
           {/* Right Utilities: CSC Helpline & Language Dropdown */}
-          <div className="flex items-center gap-4 sm:gap-6 flex-shrink-0">
+          <div className="flex items-center gap-3 sm:gap-4 flex-shrink-0">
 
-            {/* CSC Helpline Pill (Square) */}
-            <div className="hidden md:flex items-center gap-3 px-4 py-2 bg-[#fbebda] border border-[#d6c4b1] rounded-none shadow-2xs">
-              <div className="w-8 h-8 rounded-none bg-[#486172]/10 flex items-center justify-center text-[#486172]">
-                <span className="material-symbols-outlined text-[18px]">support_agent</span>
-              </div>
-              <div className="flex flex-col leading-tight">
-                <span className="text-[10px] uppercase font-sans font-semibold text-[#514536] tracking-wider">
-                  {t.cscHelpline}
-                </span>
-                <span className="font-mono font-bold text-xs text-[#221a10]">
-                  {t.phone}
-                </span>
-              </div>
-            </div>
+            {/* CSC Helpline Call Link (Clean, no icons or boxy divs, glowing on hover) */}
+            <a
+              href="tel:18002020044"
+              className="hidden md:flex flex-col text-right px-3.5 py-1.5 rounded-xl transition-all duration-300 hover:bg-[#fff4e8] hover:shadow-[0_0_20px_rgba(217,119,6,0.35)] group"
+            >
+              <span className="text-[10px] uppercase font-sans font-semibold text-[#8c7a6b] tracking-wider group-hover:text-[#845400] transition-colors">
+                {t.cscHelpline}
+              </span>
+              <span className="font-mono font-bold text-xs text-[#221a10] group-hover:text-[#845400] transition-colors">
+                {t.phone}
+              </span>
+            </a>
 
-            {/* Language Selector Dropdown (Square) */}
+            {/* Language Selector Dropdown (Clean pill, no icons/emojis, glowing on hover) */}
             <div className="relative inline-block text-left" ref={dropdownRef}>
               <button
                 type="button"
                 onClick={() => setLangMenuOpen(!langMenuOpen)}
-                className="flex items-center gap-2 px-3.5 sm:px-4 py-2 bg-[#fff8f3] border border-[#d6c4b1] text-[#221a10] rounded-none shadow-xs hover:bg-[#fff1e3] transition-colors focus:outline-none focus:ring-2 focus:ring-[#845400]/30"
+                className="flex items-center gap-1.5 px-4 py-2 text-xs sm:text-sm font-sans font-semibold text-[#845400] rounded-full transition-all duration-300 hover:bg-[#fff0db] hover:shadow-[0_0_22px_rgba(217,119,6,0.4)] focus:outline-none cursor-pointer"
                 aria-haspopup="true"
                 aria-expanded={langMenuOpen}
               >
-                <span className="material-symbols-outlined text-[18px] text-[#845400]">translate</span>
-                <span className="font-sans text-xs sm:text-sm font-bold text-[#845400]">
-                  {LANGUAGES.find((l) => l.code === lang)?.label || "🌐 हिन्दी"}
+                <span>
+                  {LANGUAGES.find((l) => l.code === lang)?.label || "English"}
                 </span>
-                <span className="material-symbols-outlined text-[18px] text-[#514536] transition-transform duration-200" style={{ transform: langMenuOpen ? 'rotate(180deg)' : 'none' }}>
-                  arrow_drop_down
+                <span
+                  className="text-[9px] text-[#845400] transition-transform duration-200 inline-block ml-0.5"
+                  style={{ transform: langMenuOpen ? "rotate(180deg)" : "none" }}
+                >
+                  ▼
                 </span>
               </button>
 
               {langMenuOpen && (
-                <div className="absolute right-0 mt-2 w-52 bg-[#ffffff] border border-[#d6c4b1] rounded-none shadow-xl z-50 py-2 divide-y divide-[#f5e6d4] animate-in fade-in slide-in-from-top-2 duration-150">
-                  <div className="px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-[#514536]">
-                    भाषा चुनें / Select Language
+                <div className="absolute right-0 mt-2 w-48 bg-white/95 backdrop-blur-md border border-[#e8dfcf] rounded-2xl shadow-xl z-50 py-1.5 animate-in fade-in slide-in-from-top-2 duration-150">
+                  <div className="px-3.5 py-1 text-[10px] font-bold uppercase tracking-wider text-[#8c7a6b]">
+                    Language
                   </div>
                   <div className="py-1">
                     {LANGUAGES.map((l) => (
@@ -184,14 +197,13 @@ export default function Navbar({ activePage = "", lang = "hi", setLang }) {
                         key={l.code}
                         type="button"
                         onClick={() => handleSelectLanguage(l.code)}
-                        className={`w-full text-left px-4 py-2.5 text-xs font-sans font-semibold rounded-none flex items-center justify-between hover:bg-[#fff1e3] transition-colors ${
-                          lang === l.code ? "bg-[#f5e6d4] text-[#845400] font-bold" : "text-[#221a10]"
+                        className={`w-full text-left px-3.5 py-2 text-xs font-sans font-medium rounded-xl mx-auto transition-all duration-200 cursor-pointer ${
+                          lang === l.code
+                            ? "bg-[#fff0db] text-[#845400] font-bold shadow-[0_0_12px_rgba(217,119,6,0.25)]"
+                            : "text-[#221a10] hover:bg-[#fff4e8] hover:text-[#845400] hover:shadow-[0_0_16px_rgba(217,119,6,0.3)]"
                         }`}
                       >
-                        <span>{l.label}</span>
-                        {lang === l.code && (
-                          <span className="material-symbols-outlined text-[16px] text-[#845400]">check</span>
-                        )}
+                        {l.label}
                       </button>
                     ))}
                   </div>
@@ -199,16 +211,30 @@ export default function Navbar({ activePage = "", lang = "hi", setLang }) {
               )}
             </div>
 
-            {/* Mobile Hamburger Button (Square) */}
+            {/* Mobile Hamburger Toggle (Clean 3-line CSS bars, no font icons, glowing on hover) */}
             <button
               type="button"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="lg:hidden p-2 rounded-none text-[#514536] hover:text-[#221a10] hover:bg-[#fbebda] border border-[#d6c4b1] transition-colors"
+              className="lg:hidden p-2.5 rounded-full text-[#514536] hover:text-[#845400] transition-all duration-300 hover:bg-[#fff0db] hover:shadow-[0_0_20px_rgba(217,119,6,0.35)] cursor-pointer"
               aria-label="Toggle navigation menu"
             >
-              <span className="material-symbols-outlined text-[24px]">
-                {mobileMenuOpen ? "close" : "menu"}
-              </span>
+              <div className="w-5 h-4 flex flex-col justify-between">
+                <span
+                  className={`block h-0.5 w-full bg-current transition-all duration-200 ${
+                    mobileMenuOpen ? "rotate-45 translate-y-1.5" : ""
+                  }`}
+                />
+                <span
+                  className={`block h-0.5 w-full bg-current transition-opacity duration-200 ${
+                    mobileMenuOpen ? "opacity-0" : ""
+                  }`}
+                />
+                <span
+                  className={`block h-0.5 w-full bg-current transition-all duration-200 ${
+                    mobileMenuOpen ? "-rotate-45 -translate-y-2" : ""
+                  }`}
+                />
+              </div>
             </button>
 
           </div>
@@ -216,7 +242,7 @@ export default function Navbar({ activePage = "", lang = "hi", setLang }) {
 
         {/* Mobile Navigation Drawer */}
         {mobileMenuOpen && (
-          <div className="lg:hidden border-t border-[#d6c4b1] py-4 bg-[#fff8f3] space-y-2 animate-in fade-in duration-150">
+          <div className="lg:hidden border-t border-[#e8dfcf]/60 py-4 bg-[#fffbf7]/95 space-y-1.5 animate-in fade-in duration-150">
             {navItems.map((item) => {
               const isActive = activePage === item.key;
               return (
@@ -224,28 +250,31 @@ export default function Navbar({ activePage = "", lang = "hi", setLang }) {
                   key={item.key}
                   href={item.href}
                   onClick={() => setMobileMenuOpen(false)}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-none text-sm font-sans font-semibold transition-all ${
+                  className={`block px-4 py-2.5 rounded-xl text-sm font-sans font-medium transition-all duration-300 ${
                     isActive
-                      ? "bg-[#f5e6d4] text-[#845400] border border-[#845400]/30 shadow-xs"
-                      : "text-[#514536] hover:text-[#221a10] hover:bg-[#fbebda]"
+                      ? "bg-[#fff0db] text-[#845400] font-semibold shadow-[0_0_16px_rgba(217,119,6,0.3)]"
+                      : "text-[#514536] hover:text-[#845400] hover:bg-[#fff4e8] hover:shadow-[0_0_18px_rgba(217,119,6,0.3)]"
                   }`}
                 >
-                  <span className={`material-symbols-outlined text-[20px] ${isActive ? "text-[#845400]" : "text-[#486172]"}`}>
-                    {item.icon}
-                  </span>
-                  <span>{item.label}</span>
+                  {item.label}
                 </Link>
               );
             })}
 
-            {/* Helpline on Mobile */}
-            <div className="pt-2 border-t border-[#d6c4b1]/60 px-4 flex items-center justify-between text-xs text-[#514536]">
-              <span>📞 {t.cscHelpline}:</span>
-              <span className="font-mono font-bold text-[#221a10]">{t.phone}</span>
+            {/* Helpline on Mobile (Clean text, no emojis) */}
+            <div className="pt-3 border-t border-[#e8dfcf]/60 px-4 flex items-center justify-between text-xs text-[#514536]">
+              <span className="text-[#8c7a6b] uppercase font-semibold text-[10px] tracking-wider">
+                {t.cscHelpline}
+              </span>
+              <a
+                href="tel:18002020044"
+                className="font-mono font-bold text-[#845400] hover:underline"
+              >
+                {t.phone}
+              </a>
             </div>
           </div>
         )}
-
       </div>
     </header>
   );

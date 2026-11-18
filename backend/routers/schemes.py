@@ -8,6 +8,7 @@ Wraps engine/finance.py (Engine 2).
 import base64
 import datetime
 import hashlib
+import json
 import os
 from fastapi import APIRouter, HTTPException
 import httpx
@@ -36,23 +37,47 @@ router = APIRouter(prefix="/api/schemes", tags=["scheme-matching"])
 PARTNER_ID = os.getenv("DIGILOCKER_PARTNER_ID", "MNRNJVXE")
 CLIENT_SECRET = os.getenv("DIGILOCKER_CLIENT_SECRET", "4ea7f92b2aaa68726457")
 REDIRECT_URI = os.getenv(
-    "DIGILOCKER_REDIRECT_URI", "http://localhost:8003/doc.php"
+    "DIGILOCKER_REDIRECT_URI", "http://localhost:3000/scheme-matcher"
 )
 
-AUTH_URL = os.getenv(
-    "DIGILOCKER_AUTH_URL",
-    "https://dev-meripehchaan.dl6.in/public/oauth2/1/authorize",
-)
-TOKEN_URL = os.getenv(
-    "DIGILOCKER_TOKEN_URL", "https://dev-meripehchaan.dl6.in/public/oauth2/1/token"
-)
-USER_URL = os.getenv(
-    "DIGILOCKER_USER_URL", "https://dev-meripehchaan.dl6.in/public/oauth2/1/user"
-)
-ISSUED_FILES_URL = os.getenv(
-    "DIGILOCKER_ISSUED_URL",
-    "https://dev-meripehchaan.dl6.in/public/oauth2/2/files/issued",
-)
+def _get_digilocker_endpoints() -> dict[str, str | None]:
+  """
+  Resolves DigiLocker API endpoints based on DIGILOCKER_MODE.
+  Allows frictionless switching between the local standalone Mock Microservice
+  (port 8005) and the real MeriPehchaan government sandbox.
+  """
+  mode = os.getenv("DIGILOCKER_MODE", "mock").strip().lower()
+  if mode == "sandbox":
+    return {
+        "mode": "sandbox",
+        "auth_url": os.getenv(
+            "DIGILOCKER_AUTH_URL",
+            "https://dev-meripehchaan.dl6.in/public/oauth2/1/authorize",
+        ),
+        "token_url": os.getenv(
+            "DIGILOCKER_TOKEN_URL",
+            "https://dev-meripehchaan.dl6.in/public/oauth2/1/token",
+        ),
+        "user_url": os.getenv(
+            "DIGILOCKER_USER_URL",
+            "https://dev-meripehchaan.dl6.in/public/oauth2/1/user",
+        ),
+        "issued_url": os.getenv(
+            "DIGILOCKER_ISSUED_URL",
+            "https://dev-meripehchaan.dl6.in/public/oauth2/1/files/issued",
+        ),
+        "mock_base_url": None,
+    }
+  else:
+    mock_base = os.getenv("DIGILOCKER_MOCK_BASE_URL", "http://localhost:8005").rstrip("/")
+    return {
+        "mode": "mock",
+        "auth_url": f"{mock_base}/public/oauth2/1/authorize",
+        "token_url": f"{mock_base}/public/oauth2/1/token",
+        "user_url": f"{mock_base}/public/oauth2/1/user",
+        "issued_url": f"{mock_base}/public/oauth2/1/files/issued",
+        "mock_base_url": mock_base,
+    }
 
 
 # --- Schemas ---
@@ -98,8 +123,10 @@ class EmiScheduleResponse(BaseModel):
 
 
 class DigiLockerTokenRequest(BaseModel):
-  code: str
-  code_verifier: str
+  code: str = "sandbox-demo"
+  code_verifier: str = "mock_verifier"
+  persona_id: str | None = None
+  selected_doctypes: list[str] | None = None
 
 
 class DocumentSubmissionRequest(BaseModel):
@@ -176,12 +203,49 @@ def _normalize_digilocker_dob(raw_dob: str | None) -> str | None:
   return raw_dob
 
 
-# --- DigiLocker Sandbox Endpoints ---
+# --- DigiLocker Sandbox & Microservice Endpoints ---
+
+
+@router.get("/digilocker/status")
+async def get_digilocker_status():
+  """
+  Reports the current status of DigiLocker integration.
+  Returns whether it is operating in 'mock' mode (standalone microservice)
+  or 'sandbox' mode (official MeriPehchaan staging).
+  """
+  endpoints = _get_digilocker_endpoints()
+  is_mock = endpoints["mode"] == "mock"
+
+  return {
+      "status": "ok",
+      "mode": endpoints["mode"],
+      "mock_mode": is_mock,
+      "service_available": True,
+      "base_url": endpoints.get("mock_base_url"),
+  }
+
+
+@router.get("/digilocker/personas")
+async def get_digilocker_personas():
+  """
+  Returns the catalog of realistic mock citizen personas for hackathon demonstrations.
+  Reads from services/mock_digilocker/personas.json.
+  """
+  local_personas_path = os.path.join(
+      os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+      "services", "mock_digilocker", "personas.json"
+  )
+  if os.path.exists(local_personas_path):
+    with open(local_personas_path, "r", encoding="utf-8") as f:
+      return json.load(f)
+
+  return {"personas": []}
 
 
 @router.get("/digilocker/authorize")
 async def get_digilocker_auth_url(state: str = "sahay_state_123"):
   """Step 1: Returns authorization URL with generated PKCE challenge."""
+  endpoints = _get_digilocker_endpoints()
   verifier, challenge = _generate_pkce()
   params = {
       "client_id": PARTNER_ID,
@@ -193,49 +257,81 @@ async def get_digilocker_auth_url(state: str = "sahay_state_123"):
   }
   query_str = "&".join(f"{k}={v}" for k, v in params.items())
   return {
-      "auth_url": f"{AUTH_URL}?{query_str}",
+      "auth_url": f"{endpoints['auth_url']}?{query_str}",
       "code_verifier": verifier,
+      "mode": endpoints["mode"],
   }
-
-
-_MOCK_DIGILOCKER_RESPONSE = {
-    "user": {
-        "name": "Priya Sharma",
-        "dob": "1970-12-31",
-        "gender": "F",
-        "digilocker_id": "mock-user-id-0001",
-    },
-    "digilocker_document_hints": {
-        "is_women_entrepreneur": True,
-        "has_linked_caste_certificate": True,
-    },
-    "verified_documents": {
-        "aadhaar": True,
-        "pan": True,
-        "caste_certificate": True,
-        "income_certificate": False,
-        "udyam_registration": False,
-    },
-    "raw_issued_items_count": 3,
-    "mock": True,  # always present when this path is used — never mistaken for a real response
-}
 
 
 @router.post("/digilocker/verify-and-sync")
 async def verify_and_sync_digilocker(body: DigiLockerTokenRequest):
-  """Exchanges code for access token, then queries User Details and Issued Documents
-
+  """
+  Exchanges code for access token, then queries User Details and Issued Documents
   to auto-construct an Applicant profile and document checklist.
 
-  DEV MOCK MODE: set DIGILOCKER_MOCK_MODE=true in the environment to skip
-  the real DigiLocker sandbox entirely — no Aadhaar needed, no real OAuth
-  round-trip, no dependency on the sandbox being reachable. Also keeps
-  real PII completely out of your local dev/test loop, which matters
-  independent of convenience. Response always carries "mock": true.
+  If DIGILOCKER_MODE=mock:
+    Loads pre-verified persona government documents from mock service catalog.
+  If DIGILOCKER_MODE=sandbox:
+    Calls official MeriPehchaan DigiLocker staging endpoints via OAuth 2.0 PKCE.
   """
-  if os.getenv("DIGILOCKER_MOCK_MODE", "").lower() == "true":
-    return _MOCK_DIGILOCKER_RESPONSE
+  endpoints = _get_digilocker_endpoints()
 
+  # 1. Mock Microservice Execution Path
+  if endpoints["mode"] == "mock":
+    local_personas_path = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+        "services", "mock_digilocker", "personas.json"
+    )
+    data = {"personas": []}
+    if os.path.exists(local_personas_path):
+      with open(local_personas_path, "r", encoding="utf-8") as f:
+        data = json.load(f)
+    persona_map = {p["id"]: p for p in data.get("personas", [])}
+    p = persona_map.get(body.persona_id or "sunita_sahu", data["personas"][0] if data["personas"] else {
+        "id": "sunita_sahu",
+        "name": "Sunita Sahu",
+        "dob": "1988-06-15",
+        "gender": "F",
+        "digilocker_id": "DL-IN-8890-SAHU",
+        "mock_aadhaar": "2341-8901-5678",
+        "demographic_hints": {"is_women_entrepreneur": True, "has_linked_caste_certificate": True},
+        "verified_documents": {"aadhaar": True, "pan": True, "caste_certificate": True, "income_certificate": False, "udyam_registration": False},
+        "issued_documents": [],
+    })
+
+    # If applicant restricted consented documents in modal:
+    verified = dict(p["verified_documents"])
+    issued = list(p.get("issued_documents", []))
+    if body.selected_doctypes:
+      selected_upper = [d.upper() for d in body.selected_doctypes]
+      issued = [d for d in issued if d.get("doctype", "").upper() in selected_upper]
+      detected = [d.get("doctype", "").upper() for d in issued]
+      verified = {
+          "aadhaar": "ADHAR" in detected,
+          "pan": "PANCR" in detected,
+          "caste_certificate": any(d in detected for d in ["CASTC", "CERST", "SOCAC"]),
+          "income_certificate": any(d in detected for d in ["INCER", "INCOM"]),
+          "udyam_registration": "UDYAM" in detected,
+      }
+
+    return {
+        "user": {
+            "name": p["name"],
+            "dob": p["dob"],
+            "gender": p["gender"],
+            "digilocker_id": p["digilocker_id"],
+            "mock_aadhaar": p.get("mock_aadhaar"),
+        },
+        "digilocker_document_hints": p.get("demographic_hints", {}),
+        "verified_documents": verified,
+        "issued_documents": issued,
+        "raw_issued_items_count": len(issued),
+        "mock": True,
+        "persona_id": p["id"],
+        "missing_documents_note": p.get("missing_documents_note", ""),
+    }
+
+  # 2. Real DigiLocker Sandbox Execution Path
   token_payload = {
       "grant_type": "authorization_code",
       "code": body.code,
@@ -246,9 +342,8 @@ async def verify_and_sync_digilocker(body: DigiLockerTokenRequest):
   }
 
   async with httpx.AsyncClient() as client:
-    # 1. Exchange Token
     token_resp = await client.post(
-        TOKEN_URL,
+        endpoints["token_url"],
         data=token_payload,
         headers={"Content-Type": "application/x-www-form-urlencoded"},
     )
@@ -262,27 +357,23 @@ async def verify_and_sync_digilocker(body: DigiLockerTokenRequest):
     access_token = token_data.get("access_token")
     headers = {"Authorization": f"Bearer {access_token}"}
 
-    # 2. Query User Details
-    user_resp = await client.get(USER_URL, headers=headers)
+    user_resp = await client.get(endpoints["user_url"], headers=headers)
     user_details = (
         user_resp.json().get("details", {})
         if user_resp.status_code == 200
         else {}
     )
 
-    # 3. Query Issued Files
-    files_resp = await client.get(ISSUED_FILES_URL, headers=headers)
+    files_resp = await client.get(endpoints["issued_url"], headers=headers)
     issued_files = (
         files_resp.json().get("items", [])
         if files_resp.status_code == 200
         else []
     )
 
-  # 4. Map user details to applicant profile
   gender = user_details.get("gender", "")
   is_women = gender.upper() == "F"
 
-  # Map available doctypes to document readiness checklist
   detected_doctypes = [f.get("doctype", "").upper() for f in issued_files]
   verified_documents = {
       "aadhaar": (
@@ -305,23 +396,14 @@ async def verify_and_sync_digilocker(body: DigiLockerTokenRequest):
           "gender": gender,
           "digilocker_id": user_details.get("digilockerid"),
       },
-      # IMPORTANT — these are DOCUMENT-PRESENCE SIGNALS, not confirmed
-      # applicant identity. "is_sc_st" here means "a caste certificate
-      # happens to be linked in this user's DigiLocker" — it is FALSE for
-      # an SC/ST applicant who simply hasn't linked/issued that document
-      # yet, which is a common case, not an edge case. DO NOT pass this
-      # value directly into Applicant.is_sc_st for scheme matching or into
-      # /document-readiness's is_sc_st field. The applicant's own explicit
-      # declaration (a checkbox: "Do you belong to SC/ST category?") is
-      # the authoritative source for eligibility — this field exists only
-      # to pre-fill that checkbox as a suggestion, which the applicant can
-      # override in either direction.
       "digilocker_document_hints": {
           "is_women_entrepreneur": is_women,
           "has_linked_caste_certificate": verified_documents["caste_certificate"],
       },
       "verified_documents": verified_documents,
+      "issued_documents": issued_files,
       "raw_issued_items_count": len(issued_files),
+      "mock": False,
   }
 
 
@@ -498,3 +580,58 @@ def check_document_readiness(request: DocumentReadinessRequest):
           for ext in readiness.ocr_extractions
       ],
   )
+
+@router.get("/spatial/db-status")
+def get_spatial_db_status():
+    """Report PostGIS connection status, active extensions, and branch counts."""
+    from engine.spatial import check_db_status
+    return check_db_status()
+
+
+@router.get("/partner-branches")
+def get_partner_branches(
+    lat: float = 21.0366,
+    lon: float = 81.5369,
+    scheme_code: str = "MICRO_FINANCE",
+    loan_amount: float = 90000.0,
+):
+    """Engine 3: Channel Partner Spatial Router - returns the nearest solvent branch
+    meeting the scheme quota, plus backup branches and bypassed audit flags.
+    Connects to PostGIS when DATABASE_URL is available, or zero-dependency in-memory router.
+    """
+    from engine.spatial import smart_route_application, SEED_BRANCHES
+    routing = smart_route_application(
+        applicant_lat=lat,
+        applicant_lon=lon,
+        scheme_code=scheme_code,
+        loan_amount=loan_amount,
+    )
+    branches_by_id = {b["id"]: b for b in SEED_BRANCHES}
+
+    def _fmt(p):
+        if not p:
+            return None
+        b_seed = branches_by_id.get(p.branch_id, {})
+        return {
+            "branch_id": p.branch_id,
+            "branch_name": p.branch_name,
+            "institution_name": p.institution_name,
+            "institution_type": p.institution_type,
+            "ifsc_code": p.ifsc_code,
+            "district": p.district,
+            "block": p.block,
+            "lat": p.lat or b_seed.get("lat", lat),
+            "lon": p.lon or b_seed.get("lon", lon),
+            "fund_quota_remaining": p.fund_quota_remaining,
+            "distance_km": p.distance_km,
+            "routing_explanation": p.routing_explanation,
+        }
+
+    return {
+        "applicant_location": {"lat": lat, "lon": lon},
+        "assigned_partner": _fmt(routing.allocated_partner),
+        "backup_partners": [_fmt(b) for b in routing.backup_partners],
+        "all_branches": SEED_BRANCHES,
+        "bypassed_audit": routing.bypassed_branches_audit,
+        "engine_mode": getattr(routing, "engine_mode", "in_memory"),
+    }

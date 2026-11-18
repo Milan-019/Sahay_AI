@@ -6,6 +6,24 @@ import VoiceInputButton from "../../components/VoiceInputButton";
 import { unlockAudio } from "../../lib/voiceAudio";
 import { buildSchemeNarration } from "../../lib/narration";
 import Navbar from "../../components/Navbar";
+import { BLOCK_CONFIG } from "../../lib/locations";
+import MockDigiLockerModal from "../../components/MockDigiLockerModal";
+import dynamic from "next/dynamic";
+
+const SpatialBranchMap = dynamic(
+  () => import("../../components/SpatialBranchMap"),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="w-full h-[270px] bg-slate-50 border border-slate-200 rounded-xl flex flex-col items-center justify-center gap-2 text-slate-500 text-xs font-semibold animate-pulse">
+        <span className="material-symbols-outlined text-[28px] text-[#d95c2e] animate-spin">
+          progress_activity
+        </span>
+        <span>स्थानिक बैंक नेविगेटर लोड हो रहा है...</span>
+      </div>
+    ),
+  }
+);
 
 const SCHEME_MATCHER_I18N = {
   hi: {
@@ -30,14 +48,21 @@ const SCHEME_MATCHER_I18N = {
     coreFormula: "मूल सूत्र (Core Formula): कुल परियोजना लागत स्वतः मार्जिन × 10 और बैंक ऋण पात्रता मार्जिन × 9 निर्धारित होगी।",
     tradeLabel: "2. प्रस्तावित व्यापार या उद्यम श्रेणी (Proposed Enterprise Trade)",
     trades: {
-      tailor: { title: "सिलाई / बुटीक", sub: "Tailoring & Craft" },
-      dairy: { title: "डेयरी व दुग्ध", sub: "Dairy Farming" },
-      retail: { title: "किराना / दुकान", sub: "Retail Kirana" },
-      vegetable_vendor: { title: "सब्जी / फल", sub: "Agri Perishables" },
-      beauty_parlour: { title: "सौंदर्य केंद्र", sub: "Beauty Parlour" },
-      electronics_repair: { title: "मोबाइल सेवा", sub: "Electronics / Repair" },
+      tailor: { title: "सिलाई एवं बुटीक (Tailoring & Boutique)", sub: "कपड़े सिलाई, परिधान व क्राफ्ट", icon: "🧵" },
+      dairy: { title: "डेयरी एवं दुग्ध व्यवसाय (Dairy Farming)", sub: "दुग्ध उत्पादन व पशुपालन", icon: "🥛" },
+      retail: { title: "किराना दुकान व खुदरा व्यापार (Retail Kirana)", sub: "दैनिक उपभोग सामग्री व प्रोविजन स्टोर", icon: "🏪" },
+      vegetable_vendor: { title: "फल व सब्जी विक्रय (Agri Perishables)", sub: "ताजा कृषि उपज व हाट बाजार", icon: "🥦" },
+      beauty_parlour: { title: "सौंदर्य केंद्र / ब्यूटी पार्लर (Beauty Parlour)", sub: "महिला सौंदर्य व कल्याण सेवाएं", icon: "💄" },
+      electronics_repair: { title: "मोबाइल व इलेक्ट्रॉनिक्स मरम्मत (Electronics Repair)", sub: "उपकरण, वायरिंग व फोन रिपेयर", icon: "📱" },
+      welding_fabrication: { title: "वेल्डिंग व मेटल फैब्रिकेशन (Welding & Fabrication)", sub: "ग्रिल, गेट, कृषि उपकरण व निर्माण", icon: "⚙️" },
+      carpentry: { title: "बढ़ईगीरी व फर्नीचर निर्माण (Carpentry & Woodwork)", sub: "काष्ठकला, मेज-कुर्सी व घरेलू फर्नीचर", icon: "🪚" },
+      textiles: { title: "वस्त्र व हथकरघा उद्योग (Textiles & Handloom)", sub: "पारंपरिक बुनाई व वस्त्र निर्माण", icon: "👕" },
+      food_processing: { title: "आटा/तेल चक्की व खाद्य प्रसंस्करण (Food Processing)", sub: "मसाला पिसाई, तेल घानी व लघु प्रसंस्करण", icon: "🌾" },
+      poultry: { title: "मुर्गी पालन व पशुधन (Poultry & Livestock)", sub: "ब्रायलर, देशी मुर्गी व लघु पशुपालन", icon: "🐔" },
+      handicrafts: { title: "हस्तशिल्प व कुटीर उद्योग (Handicrafts & Artisans)", sub: "मिट्टी बर्तन, बांस शिल्प व ग्रामीण दस्तकारी", icon: "🏺" },
     },
-    incomeLabel: "3. कुल वार्षिक पारिवारिक आय (Annual Gross Family Income)",
+    incomeLabel: "2. कुल वार्षिक पारिवारिक आय (Annual Gross Family Income)",
+    locationLabel: "3. कार्यक्षेत्र व ब्लॉक स्थान (Rural Block Location)",
     incomeEligible: "पात्र (≤ ₹ 3 लाख)",
     incomeGeneral: "सामान्य आय श्रेणी",
     incomeDesc: "NSFDC / राष्ट्रीय महिला समृद्धि योजना जैसी रियायती योजनाओं के लिए पारिवारिक आय की ऊपरी सीमा ₹ 3,00,000 प्रति वर्ष है।",
@@ -142,14 +167,21 @@ const SCHEME_MATCHER_I18N = {
     coreFormula: "मूळ सूत्र (Core Formula): एकूण प्रकल्प खर्च स्वतः भांडवल × १० आणि बँक कर्ज पात्रता भांडवल × ९ निश्चित होईल.",
     tradeLabel: "2. प्रस्तावित व्यवसाय श्रेणी (Proposed Enterprise Trade)",
     trades: {
-      tailor: { title: "टेलरिंग / बुटीक", sub: "Tailoring & Craft" },
-      dairy: { title: "डेअरी व दुग्धव्यवसाय", sub: "Dairy Farming" },
-      retail: { title: "किराणा दुकान", sub: "Retail Kirana" },
-      vegetable_vendor: { title: "भाजीपाला विक्री", sub: "Agri Perishables" },
-      beauty_parlour: { title: "ब्युटी पार्लर", sub: "Beauty Parlour" },
-      electronics_repair: { title: "मोबाईल व इलेक्ट्रॉनिक्स", sub: "Electronics / Repair" },
+      tailor: { title: "टेलरिंग व बुटीक (Tailoring & Boutique)", sub: "कापड शिलाई व क्राफ्ट", icon: "🧵" },
+      dairy: { title: "डेअरी व दुग्धव्यवसाय (Dairy Farming)", sub: "दुग्ध उत्पादन व पशुपालन", icon: "🥛" },
+      retail: { title: "किराणा व जनरल स्टोअर (Retail Kirana)", sub: "दैनंदिन वस्तू व किराणा दुकान", icon: "🏪" },
+      vegetable_vendor: { title: "भाजीपाला व फळे विक्री (Agri Perishables)", sub: "भाजी व फळे व्यवसाय", icon: "🥦" },
+      beauty_parlour: { title: "ब्युटी पार्लर व सलून (Beauty Parlour)", sub: "सौंदर्य व वेलनेस सेवा", icon: "💄" },
+      electronics_repair: { title: "मोबाईल व इलेक्ट्रॉनिक्स दुरुस्ती (Electronics Repair)", sub: "फोन व उपकरणे दुरुस्ती", icon: "📱" },
+      welding_fabrication: { title: "वेल्डिंग व फॅब्रिकेशन (Welding & Fabrication)", sub: "लोखंडी ग्रील व अवजारे काम", icon: "⚙️" },
+      carpentry: { title: "सुतारकाम व फर्निचर (Carpentry & Woodwork)", sub: "लाकडी फर्निचर व सजावट", icon: "🪚" },
+      textiles: { title: "कापड व हातमाग व्यवसाय (Textiles & Handloom)", sub: "वस्त्रोद्योग व पारंपरिक विणकाम", icon: "👕" },
+      food_processing: { title: "पीठ/तेल गिरणी व अन्न प्रक्रिया (Food Processing)", sub: "मसाले व कृषी प्रक्रिया", icon: "🌾" },
+      poultry: { title: "कुक्कुटपालन व पशुधन (Poultry & Livestock)", sub: "कुक्कुटपालन व्यवसाय", icon: "🐔" },
+      handicrafts: { title: "हस्तकला व कुटीर उद्योग (Handicrafts & Artisans)", sub: "मातीची भांडी व हस्तकला", icon: "🏺" },
     },
-    incomeLabel: "3. एकूण वार्षिक कौटुंबिक उत्पन्न (Annual Gross Family Income)",
+    incomeLabel: "2. एकूण वार्षिक कौटुंबिक उत्पन्न (Annual Gross Family Income)",
+    locationLabel: "3. कार्यक्षेत्र व ब्लॉक ठिकाण (Rural Block Location)",
     incomeEligible: "पात्र (≤ ₹ ३ लाख)",
     incomeGeneral: "सर्वसाधारण उत्पन्न वर्ग",
     incomeDesc: "NSFDC / राष्ट्रीय महिला समृद्धी योजनेसाठी वार्षिक कौटुंबिक उत्पन्नाची मर्यादा ₹ ३,००,००० आहे.",
@@ -254,14 +286,21 @@ const SCHEME_MATCHER_I18N = {
     coreFormula: "முதன்மை சூத்திரம் (Core Formula): திட்ட செலவு = முதலீடு × 10, வங்கி கடன் = முதலீடு × 9.",
     tradeLabel: "2. உத்தேசிக்கப்பட்ட தொழில் பிரிவு (Proposed Enterprise Trade)",
     trades: {
-      tailor: { title: "தையல் / ஆடை வடிவமைப்பு", sub: "Tailoring & Craft" },
-      dairy: { title: "பால் பண்ணை", sub: "Dairy Farming" },
-      retail: { title: "மளிகை கடை", sub: "Retail Kirana" },
-      vegetable_vendor: { title: "காய்கறி விற்பனை", sub: "Agri Perishables" },
-      beauty_parlour: { title: "அழகு நிலையம்", sub: "Beauty Parlour" },
-      electronics_repair: { title: "மொபைல் பழுதுபார்ப்பு", sub: "Electronics / Repair" },
+      tailor: { title: "தையல் மற்றும் ஆடை வடிவமைப்பு (Tailoring)", sub: "ஆடை வடிவமைப்பு மற்றும் கைவினை", icon: "🧵" },
+      dairy: { title: "பால் பண்ணை மற்றும் பால் உற்பத்தி (Dairy)", sub: "கால்நடை வளர்ப்பு", icon: "🥛" },
+      retail: { title: "மளிகை கடை (Retail Kirana Store)", sub: "மளிகை மற்றும் பொருட்கள்", icon: "🏪" },
+      vegetable_vendor: { title: "காய்கறி மற்றும் பழங்கள் விற்பனை (Perishables)", sub: "விவசாய விளைபொருட்கள்", icon: "🥦" },
+      beauty_parlour: { title: "அழகு நிலையம் (Beauty Parlour)", sub: "அழகு மற்றும் நலவாழ்வு", icon: "💄" },
+      electronics_repair: { title: "மொபைல் மற்றும் எலக்ட்ரானிக்ஸ் பழுது (Electronics)", sub: "பழுதுபார்ப்பு சேவைகள்", icon: "📱" },
+      welding_fabrication: { title: "வெல்டிங் மற்றும் ஃபேப்ரிகேஷன் (Welding)", sub: "உலோக வேலைகள்", icon: "⚙️" },
+      carpentry: { title: "தச்சு மற்றும் மரச்சாமான்கள் (Carpentry)", sub: "மர வேலைப்பாடுகள்", icon: "🪚" },
+      textiles: { title: "ஜவுளி மற்றும் கைத்தறி (Textiles & Handloom)", sub: "கைத்தறி ஆடைகள்", icon: "👕" },
+      food_processing: { title: "உணவு பதப்படுத்துதல் (Food Processing)", sub: "மாவு ஆலை மற்றும் மசாலா", icon: "🌾" },
+      poultry: { title: "கோழி வளர்ப்பு மற்றும் கால்நடை (Poultry)", sub: "கோழி பண்ணை", icon: "🐔" },
+      handicrafts: { title: "கைவினைப்பொருட்கள் (Handicrafts & Artisans)", sub: "மண்பாண்டம் மற்றும் கைவினை", icon: "🏺" },
     },
-    incomeLabel: "3. மொத்த ஆண்டு குடும்ப வருமானம் (Annual Gross Family Income)",
+    incomeLabel: "2. மொத்த ஆண்டு குடும்ப வருமானம் (Annual Gross Family Income)",
+    locationLabel: "3. வட்டாரம் / பகுதி தேர்வு (Rural Block Location)",
     incomeEligible: "தகுதியானது (≤ ₹ 3 லட்சம்)",
     incomeGeneral: "பொது வருமான பிரிவு",
     incomeDesc: "NSFDC சிறப்பு சலுகை திட்டங்களுக்கு ஆண்டு குடும்ப வருமான உச்சவரம்பு ₹ 3,00,000 ஆகும்.",
@@ -366,14 +405,21 @@ const SCHEME_MATCHER_I18N = {
     coreFormula: "Core Formula: Total Project Cost = Margin × 10, Maximum Concessional Loan = Margin × 9.",
     tradeLabel: "2. Proposed Enterprise Trade Category",
     trades: {
-      tailor: { title: "Tailoring & Boutique", sub: "Tailoring & Craft" },
-      dairy: { title: "Dairy Farming", sub: "Dairy & Livestock" },
-      retail: { title: "Kirana / Retail Store", sub: "Retail Kirana" },
-      vegetable_vendor: { title: "Agri Perishables", sub: "Vegetables & Fruit" },
-      beauty_parlour: { title: "Beauty Parlour", sub: "Salon & Wellness" },
-      electronics_repair: { title: "Electronics Repair", sub: "Mobile & Appliances" },
+      tailor: { title: "Tailoring & Boutique", sub: "Garment Making, Tailoring & Craft", icon: "🧵" },
+      dairy: { title: "Dairy Farming & Milk Production", sub: "Animal Husbandry & Dairy Unit", icon: "🥛" },
+      retail: { title: "Kirana / Grocery Retail Store", sub: "Daily Essentials & Provision Store", icon: "🏪" },
+      vegetable_vendor: { title: "Vegetables & Fruit Retail", sub: "Fresh Agri Produce & Haat Vendor", icon: "🥦" },
+      beauty_parlour: { title: "Beauty Parlour & Salon", sub: "Personal Grooming & Wellness", icon: "💄" },
+      electronics_repair: { title: "Electronics & Mobile Repair", sub: "Appliance Servicing & Phone Repair", icon: "📱" },
+      welding_fabrication: { title: "Welding & Metal Fabrication", sub: "Grill, Gates, Agri Implements & Sheds", icon: "⚙️" },
+      carpentry: { title: "Carpentry & Furniture Making", sub: "Woodcraft, Furniture & Fittings", icon: "🪚" },
+      textiles: { title: "Textiles & Handloom", sub: "Weaving, Fabric & Garment Unit", icon: "👕" },
+      food_processing: { title: "Agro & Food Processing Unit", sub: "Flour/Oil Mill, Spices & Packaging", icon: "🌾" },
+      poultry: { title: "Poultry & Livestock Farming", sub: "Broiler, Layers & Small Livestock", icon: "🐔" },
+      handicrafts: { title: "Handicrafts & Rural Artisans", sub: "Pottery, Bamboo Craft & Rural Arts", icon: "🏺" },
     },
-    incomeLabel: "3. Annual Gross Family Income (₹)",
+    incomeLabel: "2. Annual Gross Family Income (₹)",
+    locationLabel: "3. Rural Block & Servicing Location",
     incomeEligible: "Eligible (≤ ₹ 3 Lakh)",
     incomeGeneral: "Standard Income Slab",
     incomeDesc: "Income ceiling for special concessional schemes like NSFDC Mahila Samridhi is ₹ 3,00,000 per annum.",
@@ -469,10 +515,13 @@ export default function SchemeMatcherPage() {
   const [speakToken, setSpeakToken] = useState(0); // bumped when results are ready: triggers the spoken result
   const [tradeCategory, setTradeCategory] = useState("tailor");
   const [annualIncome, setAnnualIncome] = useState(250000);
+  const [blockKey, setBlockKey] = useState("patan");
   const [isWomen, setIsWomen] = useState(true);
   const [isScSt, setIsScSt] = useState(true);
   const [isGreenfield, setIsGreenfield] = useState(true);
   const [isRural, setIsRural] = useState(true);
+
+  const selectedBlock = BLOCK_CONFIG[blockKey] || BLOCK_CONFIG.patan;
 
   // Results State (Part 2: Outputs)
   const [hasCalculated, setHasCalculated] = useState(false);
@@ -500,6 +549,7 @@ export default function SchemeMatcherPage() {
   // UI Modals & Features
   const [printModalOpen, setPrintModalOpen] = useState(false);
   const [digilockerSynced, setDigilockerSynced] = useState(false);
+  const [digilockerModalOpen, setDigilockerModalOpen] = useState(false);
 
   const resultsRef = useRef(null);
   const t = SCHEME_MATCHER_I18N[lang] || SCHEME_MATCHER_I18N.hi;
@@ -682,28 +732,102 @@ export default function SchemeMatcherPage() {
     }
   };
 
+  // Sync language and inherit profile handoff from Business Advisor (Step 1 -> Step 2)
+  useEffect(() => {
+    try {
+      const stored = sessionStorage.getItem("sahay-session-lang") || localStorage.getItem("sahay-preferred-lang");
+      if (stored) {
+        setLang(stored);
+      }
+    } catch (e) {}
+
+    // Read handoff profile from Step 1 (Business Advisor)
+    try {
+      const handoffStr = sessionStorage.getItem("sahay-profile-handoff");
+      if (handoffStr) {
+        const handoff = JSON.parse(handoffStr);
+        if (handoff.fullName && typeof handoff.fullName === "string") setFullName(handoff.fullName);
+        if (handoff.margin && Number(handoff.margin) > 0) setMargin(Number(handoff.margin));
+        if (handoff.annualIncome) {
+          const incNum = typeof handoff.annualIncome === "string"
+            ? Number(handoff.annualIncome.replace(/[^0-9]/g, ""))
+            : Number(handoff.annualIncome);
+          if (incNum > 0) setAnnualIncome(incNum);
+        }
+        if (handoff.blockKey && ["patan", "dhamdha", "durg_rural", "arang"].includes(handoff.blockKey)) {
+          setBlockKey(handoff.blockKey);
+        }
+        if (handoff.tradeCategory && typeof handoff.tradeCategory === "string") {
+          setTradeCategory(handoff.tradeCategory);
+        }
+        if (typeof handoff.isWomen === "boolean") setIsWomen(handoff.isWomen);
+        if (typeof handoff.isScSt === "boolean") setIsScSt(handoff.isScSt);
+        if (typeof handoff.isGreenfield === "boolean") setIsGreenfield(handoff.isGreenfield);
+      }
+    } catch (e) {
+      console.debug("Error reading profile handoff:", e);
+    }
+
+    const handleLangEvent = (e) => {
+      if (e.detail) {
+        setLang(e.detail);
+      }
+    };
+    window.addEventListener("sahay-language-change", handleLangEvent);
+    return () => window.removeEventListener("sahay-language-change", handleLangEvent);
+  }, []);
+
   // Re-fetch EMI when language is toggled and calculation is already active
   const handleLanguageChange = (newLang) => {
     setLang(newLang);
     setLangMenuOpen(false);
+    try {
+      sessionStorage.setItem("sahay-session-lang", newLang);
+      sessionStorage.setItem("sahay-session-chosen", "true");
+      localStorage.setItem("sahay-preferred-lang", newLang);
+      window.dispatchEvent(new CustomEvent("sahay-language-change", { detail: newLang }));
+    } catch (e) {}
     if (hasCalculated && offers.length > 0) {
       const currentSchemeCode = offers[selectedOfferIndex]?.scheme_code || offers[0].scheme_code;
       fetchEmi(currentSchemeCode, newLang);
     }
   };
 
-  const handleDigiLockerConnect = async () => {
-    try {
-      const res = await fetch("http://localhost:8000/api/schemes/digilocker/authorize");
-      if (res.ok) {
-        const data = await res.json();
-        if (data.auth_url) {
-          window.open(data.auth_url, "_blank", "width=600,height=700");
-          setDigilockerSynced(true);
-        }
-      }
-    } catch (err) {
-      alert("DigiLocker Sandbox connection error: " + err.message);
+  const handleDigiLockerConnect = () => {
+    setDigilockerModalOpen(true);
+  };
+
+  const handleDigiLockerSuccess = (data) => {
+    setDigilockerSynced(true);
+    const personaName = data?.user?.name || "Sunita Sahu";
+    const personaAadhaar = data?.user?.mock_aadhaar || "2341-8901-5678";
+    setFullName(personaName);
+
+    if (data?.verified_documents) {
+      setUploadedDocs((prev) => ({
+        ...prev,
+        AADHAAR: {
+          status: data.verified_documents.aadhaar ? "verified" : "pending",
+          name: personaName,
+          id: personaAadhaar,
+          isDigiLocker: true,
+          fileName: "Aadhaar_eKYC.xml",
+        },
+        PAN: {
+          status: data.verified_documents.pan ? "verified" : "pending",
+          name: personaName,
+          id: "ABCPS9102K",
+          isDigiLocker: true,
+          fileName: "PAN_NSDL.xml",
+        },
+        CASTE_CERTIFICATE: {
+          status: data.verified_documents.caste_certificate ? "verified" : "pending",
+          name: personaName,
+          id: "CG-CST-2024-88",
+          isDigiLocker: true,
+          fileName: "Caste_Cert.pdf",
+        },
+      }));
     }
   };
 
@@ -775,67 +899,45 @@ export default function SchemeMatcherPage() {
 
           {/* Main Ledger Spread Container */}
           <div className="max-w-7xl mx-auto w-full px-margin md:px-margin-tablet lg:px-margin-desktop py-space-xl flex flex-col gap-space-xl">
-            {/* Screen Ledger Header Frame */}
-            <div className="w-full bg-surface-container-lowest rounded shadow-xs p-space-lg md:p-space-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-space-md relative overflow-hidden border border-outline-variant">
-              <div className="flex flex-col gap-space-xs relative z-10">
-                <div className="flex items-center gap-space-sm">
-                  <span className="px-space-sm py-0.5 bg-primary text-on-primary font-label-ledger text-label-ledger uppercase rounded">प्रपत्र सं. ०१</span>
-                  <span className="font-label-ledger text-label-ledger uppercase tracking-wider text-on-surface-variant">Rural Credit Eligibility Registry</span>
+{/* PART 1: INTAKE FORM (Clean Gov Portal Layout) */}
+            <div className="w-full bg-white rounded-2xl shadow-sm p-6 sm:p-8 flex flex-col gap-6 border border-slate-200">
+              {/* Form Title Header */}
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-4 border-b border-slate-100">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-[#fff4ed] text-[#d95c2e] flex items-center justify-center font-bold border border-[#fed7aa]">
+                    <span className="material-symbols-outlined text-[24px]">assignment</span>
+                  </div>
+                  <div>
+                    <h2 className="text-xl sm:text-2xl font-bold text-slate-900">
+                      {t.part1Title}
+                    </h2>
+                    <p className="text-xs sm:text-sm text-slate-500">{t.part1Sub}</p>
+                  </div>
                 </div>
-                <h1 className="font-headline-lg text-headline-lg md:text-display-lg text-on-surface font-bold tracking-tight">
-                  {t.formHeading} <span className="font-normal text-on-surface-variant font-body-lg text-body-lg ml-2">{t.formSubheading}</span>
-                </h1>
-                <p className="font-body-md text-body-md text-on-surface-variant max-w-3xl">
-                  {t.formDesc}
-                </p>
-              </div>
-
-              {/* Institutional Stamp Badge */}
-              <div className="flex-shrink-0 self-end md:self-auto bg-surface-container-low p-space-md rounded flex items-center gap-space-md transform -rotate-1 shadow-xs border border-outline-variant">
-                <div className="w-12 h-12 rounded-full bg-tertiary-fixed text-on-tertiary-fixed flex items-center justify-center font-bold">
-                  <span className="material-symbols-outlined text-[26px]">verified</span>
-                </div>
-                <div className="flex flex-col leading-tight">
-                  <span className="font-label-ledger text-label-ledger uppercase font-bold text-tertiary">NABARD / SIDBI</span>
-                  <span className="font-tabular-record text-tabular-record font-bold text-on-surface">{t.subventionReady}</span>
-                  <span className="font-label-ledger text-label-ledger text-on-surface-variant">Auth Ref: BR-8841-KHT</span>
-                </div>
-              </div>
-            </div>
-
-            {/* PART 1: INTAKE FORM (Always Visible First) */}
-            <div className="w-full bg-surface-container-lowest rounded shadow-xs p-space-lg md:p-space-xl flex flex-col gap-space-xl border border-outline-variant">
-              <div className="flex items-center justify-between pb-space-sm bg-surface-container px-space-md py-space-sm rounded">
-                <div className="flex items-center gap-space-sm">
-                  <span className="material-symbols-outlined text-primary text-[22px]">edit_note</span>
-                  <h2 className="font-headline-sm text-headline-sm text-on-surface font-bold">
-                    {t.part1Title} <span className="font-normal text-body-sm text-on-surface-variant">{t.part1Sub}</span>
-                  </h2>
-                </div>
-                <span className="font-label-ledger text-label-ledger uppercase px-space-sm py-0.5 bg-surface text-on-surface-variant rounded border border-outline-variant">
-                  {hasCalculated ? "✓ Step 1 & 2 Complete" : "Step 1 of 2"}
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-semibold self-start sm:self-auto border border-slate-200">
+                  {hasCalculated ? "✓ Step 1 Complete" : "Step 1 of 2"}
                 </span>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-space-xl">
-                {/* Left 7 Cols: Financials and Trades */}
-                <div className="lg:col-span-7 flex flex-col gap-space-lg">
-                  {/* Applicant Name Field */}
-                  <div className="flex flex-col gap-space-xs">
-                    <div className="flex items-center justify-between">
-                      <label className="font-label-ledger text-label-ledger uppercase text-on-surface font-bold" htmlFor="applicant-name-input">
-                        आवेदक का नाम (Applicant Full Name)
+              {/* 1. Applicant Full Name & Voice Input Row */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch">
+                {/* Applicant Full Name (7 cols) */}
+                <div className="lg:col-span-7 flex flex-col justify-between p-4 rounded-xl bg-slate-50 border border-slate-200/80">
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="text-xs font-bold uppercase tracking-wider text-slate-700" htmlFor="applicant-name-input">
+                        {lang === "en" ? "Applicant Full Name" : "आवेदक का पूरा नाम (Applicant Full Name)"}
                       </label>
-                      <span className="font-label-ledger text-label-ledger text-tertiary bg-tertiary-fixed px-space-xs py-0.5 rounded font-bold">
-                        KYC Validated
+                      <span className="text-[11px] font-semibold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                        e-KYC
                       </span>
                     </div>
-                    <div className="flex items-stretch rounded bg-surface-container-low shadow-inner overflow-hidden border border-outline-variant focus-within:ring-2 focus-within:ring-secondary transition-all">
-                      <span className="px-space-md py-space-sm bg-surface-container font-headline-sm text-headline-sm text-on-surface font-bold flex items-center justify-center select-none">
-                        <span className="material-symbols-outlined text-[20px] text-primary">person</span>
+                    <div className="flex items-center rounded-xl bg-white border border-slate-300 focus-within:border-[#d95c2e] focus-within:ring-2 focus-within:ring-[#d95c2e]/20 transition-all overflow-hidden shadow-2xs">
+                      <span className="px-3 py-2.5 text-slate-400 flex items-center justify-center">
+                        <span className="material-symbols-outlined text-[20px]">person</span>
                       </span>
                       <input
-                        className="w-full bg-transparent px-space-md py-space-sm font-tabular-record text-tabular-record font-bold text-on-surface focus:outline-none"
+                        className="w-full bg-transparent pr-3 py-2 text-sm font-bold text-slate-900 focus:outline-none"
                         id="applicant-name-input"
                         type="text"
                         value={fullName}
@@ -844,243 +946,400 @@ export default function SchemeMatcherPage() {
                       />
                     </div>
                   </div>
+                  <p className="text-[11px] text-slate-500 mt-2">
+                    {lang === "en" ? "Enter the name as written on your Aadhaar / PAN card." : "वही नाम दर्ज करें जो आपके आधार अथवा पैन कार्ड पर दर्ज है।"}
+                  </p>
+                </div>
 
-                  {/* PRIMARY VOICE INPUT — speak once, the form fills itself.
-                      Typing stays fully available below. */}
-                  <div className="border-2 border-[#845400] bg-[#fbebda]/50 p-5 flex flex-col items-center gap-3 rounded-none">
-                    <p className="font-sans font-bold text-base text-[#221a10] text-center">
-                      {lang === "en"
-                        ? "Tell us how much money you have — we'll fill the form for you"
-                        : "आपके पास कितना पैसा है, बोलकर बताएं — हम फ़ॉर्म भर देंगे"}
-                    </p>
+                {/* Voice Input Assistant (5 cols) */}
+                <div className="lg:col-span-5 rounded-xl border border-amber-200 bg-[#fff9f3] p-4 flex flex-col justify-between shadow-2xs">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="material-symbols-outlined text-[#d95c2e] text-xl">mic</span>
+                      <p className="text-xs font-bold text-slate-900">
+                        {lang === "en" ? "Voice-First Auto Fill" : "बोलकर पूरा फॉर्म भरें (Voice First)"}
+                      </p>
+                    </div>
                     <VoiceInputButton
                       language={lang}
                       fields={{
-                        margin: "the amount of money in rupees the person has available as their own capital, as a plain number",
-                        is_women: "true if the speaker identifies as a woman, false if a man, null if unclear",
-                        is_sc_st: "true if the speaker says they belong to SC or ST category, false if they explicitly say they do not, null if not mentioned",
+                        full_name: "the applicant's full name if stated, as a clean string (e.g. Milan, Sunita Sahu); null if not mentioned",
+                        block: "one of exactly: patan, dhamdha, durg_rural, arang — whichever village or block the person mentions; null if none is clearly mentioned",
+                        margin: "the amount of money in rupees the person has available to invest as their own capital/margin, as a plain number (e.g. 50000); null if not mentioned",
+                        annual_income: "the annual gross family income in rupees, as a plain number (e.g. 200000 for 2 lakh); null if not mentioned",
+                        trade_category: "one of: tailor (sewing, boutique, garments, cloth stitching), dairy (milk, cattle, livestock), retail (kirana, grocery, shop), carpentry (woodwork), food (hotel, snacks, eatery), service (repair, salon, csc), handicrafts (pottery, crafts) — closest match to the business/shop they want to start; null if not mentioned",
+                        is_women: "true if the speaker identifies as a woman/female, false if a man/male, null if unclear",
+                        is_sc_st: "true if the speaker says they belong to SC or ST category, false if general/OBC, null if not mentioned",
+                        is_greenfield: "true if starting a new business/shop/venture, false if expanding existing, null if unclear",
+                        is_rural: "true if living or setting up in rural/village area, false if urban/city, null if unclear",
                       }}
                       onTranscript={(text) => setVoiceHeard(text)}
                       onResult={(values) => {
+                        const VALID_BLOCKS = ["patan", "dhamdha", "durg_rural", "arang"];
+                        if (values.full_name && typeof values.full_name === "string" && values.full_name.trim()) {
+                          setFullName(values.full_name.trim());
+                        }
+                        if (VALID_BLOCKS.includes(values.block)) {
+                          setBlockKey(values.block);
+                        }
                         const m = Math.round(Number(values.margin));
                         if (m > 0) setMargin(m);
+                        const inc = Math.round(Number(values.annual_income));
+                        if (inc > 0) setAnnualIncome(inc);
+                        if (values.trade_category && typeof values.trade_category === "string") {
+                          const tc = values.trade_category.toLowerCase();
+                          const VALID = ["tailor", "dairy", "retail", "carpentry", "food", "service", "handicrafts"];
+                          if (VALID.includes(tc)) setTradeCategory(tc);
+                        }
                         if (typeof values.is_women === "boolean") setIsWomen(values.is_women);
                         if (typeof values.is_sc_st === "boolean") setIsScSt(values.is_sc_st);
+                        if (typeof values.is_greenfield === "boolean") setIsGreenfield(values.is_greenfield);
+                        if (typeof values.is_rural === "boolean") setIsRural(values.is_rural);
                       }}
                     />
-                    {voiceHeard && (
-                      <p className="text-sm text-[#514536] text-center max-w-md">
-                        <span className="font-bold">{lang === "en" ? "We heard: " : "हमने सुना: "}</span>
+                  </div>
+                  {voiceHeard ? (
+                    <div className="mt-2 space-y-1">
+                      <p className="text-xs text-slate-700 bg-white/80 p-2 rounded-lg border border-amber-200/60">
+                        <span className="font-bold text-[#d95c2e]">{lang === "en" ? "Heard: " : "सुना: "}</span>
                         &ldquo;{voiceHeard}&rdquo;
-                        <br />
-                        <span className="text-xs">
-                          {lang === "en"
-                            ? "Check the boxes below — you can change anything that's wrong."
-                            : "नीचे के बॉक्स देखें — कुछ गलत हो तो बदल सकते हैं।"}
-                        </span>
                       </p>
-                    )}
-                  </div>
-
-                  {/* Margin Input Field */}
-                  <div className="flex flex-col gap-space-xs">
-                    <div className="flex items-center justify-between">
-                      <label className="font-label-ledger text-label-ledger uppercase text-on-surface font-bold" htmlFor="margin-capital-input">
-                        {t.marginLabel}
-                      </label>
-                      <span className="font-label-ledger text-label-ledger text-primary bg-primary-fixed px-space-xs py-0.5 rounded font-bold">
-                        {t.minMarginBadge}
-                      </span>
+                      <p className="text-[11px] font-semibold text-emerald-800 flex items-center gap-1">
+                        <span className="material-symbols-outlined text-[14px]">check_circle</span>
+                        {lang === "en"
+                          ? "Fields (Name, Location, Capital, Income, Trade) updated automatically"
+                          : "फ़ील्ड (नाम, ब्लॉक स्थान, पूंजी, पारिवारिक आय, व्यापार) स्वतः अपडेट हो गए"}
+                      </p>
                     </div>
-
-                    <div className="flex items-stretch rounded bg-surface-container-low shadow-inner overflow-hidden border border-outline-variant focus-within:ring-2 focus-within:ring-secondary transition-all">
-                      <span className="px-space-lg py-space-md bg-surface-container font-headline-md text-headline-md text-on-surface font-bold flex items-center justify-center select-none">₹</span>
-                      <input
-                        className="w-full bg-transparent px-space-md py-space-md font-financial-stat-md text-financial-stat-md text-on-surface font-bold focus:outline-none tabular-nums"
-                        id="margin-capital-input"
-                        type="text"
-                        value={margin.toLocaleString("en-IN")}
-                        onChange={(e) => setMargin(parseINR(e.target.value))}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setMargin(100000)}
-                        className="px-space-md text-on-surface-variant hover:text-on-surface text-label-ledger font-label-ledger uppercase cursor-pointer"
-                      >
-                        Reset
-                      </button>
-                    </div>
-
-                    <p className="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-space-xs mt-1">
-                      <span className="material-symbols-outlined text-[16px] text-tertiary">calculate</span>
-                      <span>{t.coreFormula}</span>
+                  ) : (
+                    <p className="text-[11px] text-slate-600 mt-2 leading-relaxed bg-white/60 p-2 rounded-lg border border-amber-100">
+                      <span className="font-semibold text-slate-800">{lang === "en" ? "Tip: " : "सुझाव: "}</span>
+                      {lang === "en"
+                        ? 'Speak naturally: e.g. "My name is Milan, I have 50,000 capital in Patan, family income is 2 lakh and I want to start a tailor business"'
+                        : 'स्वाभाविक बोलें: उदा. "मेरा नाम मिलन है, पाटन में मेरे पास 50,000 रुपये पूंजी है, परिवार की आय 2 लाख है और मैं सिलाई का नया काम शुरू करना चाहता हूँ"'}
                     </p>
-                  </div>
+                  )}
+                </div>
+              </div>
 
-                  {/* Trade Selector Matrix */}
-                  <div className="flex flex-col gap-space-xs">
-                    <label className="font-label-ledger text-label-ledger uppercase text-on-surface font-bold">
-                      {t.tradeLabel}
+              {/* 2. Financial & Geographic Inputs (3-Column Grid) */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                {/* Available Margin Money */}
+                <div className="flex flex-col gap-1.5 p-4 rounded-xl bg-slate-50 border border-slate-200/80">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold uppercase tracking-wider text-slate-800" htmlFor="margin-capital-input">
+                      {t.marginLabel}
                     </label>
-
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-space-sm">
-                      {[
-                        { id: "tailor", icon: "🧵", info: t.trades.tailor },
-                        { id: "dairy", icon: "🥛", info: t.trades.dairy },
-                        { id: "retail", icon: "🏪", info: t.trades.retail },
-                        { id: "vegetable_vendor", icon: "🥦", info: t.trades.vegetable_vendor },
-                        { id: "beauty_parlour", icon: "💄", info: t.trades.beauty_parlour },
-                        { id: "electronics_repair", icon: "📱", info: t.trades.electronics_repair },
-                      ].map((item) => {
-                        const isSelected = tradeCategory === item.id;
-                        return (
-                          <button
-                            key={item.id}
-                            type="button"
-                            onClick={() => setTradeCategory(item.id)}
-                            className={`flex items-center gap-space-sm p-space-md rounded transition-all text-left cursor-pointer ${isSelected
-                              ? "bg-primary text-on-primary font-bold shadow-xs"
-                              : "bg-surface-container text-on-surface hover:bg-surface-container-high border border-outline-variant"
-                              }`}
-                          >
-                            <span className="text-xl">{item.icon}</span>
-                            <div className="flex flex-col leading-tight">
-                              <span className="font-body-md text-body-md font-semibold">{item.info.title}</span>
-                              <span className={`font-label-ledger text-label-ledger ${isSelected ? "opacity-90" : "text-on-surface-variant"}`}>
-                                {item.info.sub}
-                              </span>
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
+                    <span className="text-[11px] font-bold text-[#d95c2e] bg-[#fff4ed] px-2 py-0.5 rounded-full border border-[#fed7aa]">
+                      {t.minMarginBadge}
+                    </span>
                   </div>
 
-                  {/* Annual Family Income */}
-                  <div className="flex flex-col gap-space-xs">
-                    <label className="font-label-ledger text-label-ledger uppercase text-on-surface font-bold" htmlFor="annual-income-input">
+                  <div className="flex items-stretch rounded-xl bg-white border border-slate-300 focus-within:border-[#d95c2e] focus-within:ring-2 focus-within:ring-[#d95c2e]/20 transition-all overflow-hidden shadow-2xs">
+                    <span className="px-3.5 py-2.5 bg-slate-100 text-slate-700 font-bold text-base flex items-center justify-center select-none border-r border-slate-200">
+                      ₹
+                    </span>
+                    <input
+                      className="w-full bg-transparent px-3.5 py-2 text-base font-extrabold text-slate-900 focus:outline-none tabular-nums"
+                      id="margin-capital-input"
+                      type="text"
+                      value={margin.toLocaleString("en-IN")}
+                      onChange={(e) => setMargin(parseINR(e.target.value))}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setMargin(100000)}
+                      className="px-3 text-xs font-bold text-slate-500 hover:text-slate-800 hover:bg-slate-50 border-l border-slate-200 cursor-pointer"
+                    >
+                      Reset
+                    </button>
+                  </div>
+
+                  <p className="text-[11px] text-slate-500 flex items-center gap-1.5 mt-1">
+                    <span className="material-symbols-outlined text-[15px] text-[#d95c2e]">calculate</span>
+                    <span>{t.coreFormula}</span>
+                  </p>
+                </div>
+
+                {/* Annual Gross Family Income */}
+                <div className="flex flex-col gap-1.5 p-4 rounded-xl bg-slate-50 border border-slate-200/80">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold uppercase tracking-wider text-slate-800" htmlFor="annual-income-input">
                       {t.incomeLabel}
                     </label>
-                    <div className="flex items-stretch rounded bg-surface-container-low shadow-inner overflow-hidden border border-outline-variant focus-within:ring-2 focus-within:ring-secondary transition-all">
-                      <span className="px-space-md py-space-sm bg-surface-container font-headline-sm text-headline-sm text-on-surface font-bold flex items-center justify-center select-none">₹</span>
-                      <input
-                        className="w-full bg-transparent px-space-md py-space-sm font-tabular-record text-tabular-record font-bold text-on-surface focus:outline-none"
-                        id="annual-income-input"
-                        type="text"
-                        value={annualIncome.toLocaleString("en-IN")}
-                        onChange={(e) => setAnnualIncome(parseINR(e.target.value))}
-                      />
-                      <div className="px-space-md flex items-center bg-surface-container text-tertiary font-label-ledger text-label-ledger uppercase font-semibold">
-                        <span className="material-symbols-outlined text-[16px] mr-1">check_circle</span>
-                        {annualIncome <= 300000 ? t.incomeEligible : t.incomeGeneral}
-                      </div>
-                    </div>
-                    <p className="font-body-sm text-body-sm text-on-surface-variant">
-                      {t.incomeDesc}
-                    </p>
+                    <span
+                      className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${
+                        annualIncome <= 300000
+                          ? "bg-emerald-50 text-emerald-800 border-emerald-200"
+                          : "bg-slate-200 text-slate-700 border-slate-300"
+                      }`}
+                    >
+                      {annualIncome <= 300000 ? t.incomeEligible : t.incomeGeneral}
+                    </span>
                   </div>
+
+                  <div className="flex items-stretch rounded-xl bg-white border border-slate-300 focus-within:border-[#d95c2e] focus-within:ring-2 focus-within:ring-[#d95c2e]/20 transition-all overflow-hidden shadow-2xs">
+                    <span className="px-3.5 py-2.5 bg-slate-100 text-slate-700 font-bold text-base flex items-center justify-center select-none border-r border-slate-200">
+                      ₹
+                    </span>
+                    <input
+                      className="w-full bg-transparent px-3.5 py-2 text-base font-extrabold text-slate-900 focus:outline-none tabular-nums"
+                      id="annual-income-input"
+                      type="text"
+                      value={annualIncome.toLocaleString("en-IN")}
+                      onChange={(e) => setAnnualIncome(parseINR(e.target.value))}
+                    />
+                  </div>
+
+                  <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">
+                    {t.incomeDesc}
+                  </p>
                 </div>
 
-                {/* Right 5 Cols: Affirmative Toggles & Primary Action CTA */}
-                <div className="lg:col-span-5 flex flex-col justify-between gap-space-lg bg-surface-container-low p-space-lg rounded border border-outline-variant">
-                  <div className="flex flex-col gap-space-md">
-                    <div className="flex items-center justify-between pb-space-xs">
-                      <h3 className="font-headline-sm text-headline-sm text-on-surface font-bold">
-                        {t.concessionsTitle}
-                      </h3>
-                      <span className="font-label-ledger text-label-ledger text-tertiary font-bold uppercase bg-tertiary-fixed px-space-xs py-0.5 rounded">
-                        4 Active
+                {/* 3. Rural Block & Servicing Location Selection */}
+                <div className="flex flex-col justify-between p-4 rounded-xl bg-slate-50 border border-slate-200/80">
+                  <div className="flex flex-col gap-1.5">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-bold uppercase tracking-wider text-slate-800" htmlFor="block-location-select">
+                        {t.locationLabel}
+                      </label>
+                      <span className="text-[11px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse"></span>
+                        {selectedBlock.gpsText}
                       </span>
                     </div>
-                    <p className="font-body-sm text-body-sm text-on-surface-variant">
-                      {t.concessionsSub}
-                    </p>
 
-                    {/* Toggle List with Physical Ledger Switch Look */}
-                    <div className="flex flex-col gap-space-sm">
-                      {/* 1. Women Entrepreneur */}
-                      <label className="flex items-center justify-between p-space-md bg-surface-container-lowest rounded shadow-xs border border-outline-variant cursor-pointer transition-colors">
-                        <div className="flex items-start gap-space-sm">
-                          <span className="text-xl">👩‍💼</span>
-                          <div className="flex flex-col">
-                            <span className="font-body-md text-body-md font-bold text-on-surface">{t.womenLabel}</span>
-                            <span className="font-label-ledger text-label-ledger text-tertiary font-semibold">{t.womenBenefit}</span>
-                          </div>
-                        </div>
-                        <input
-                          type="checkbox"
-                          checked={isWomen}
-                          onChange={(e) => setIsWomen(e.target.checked)}
-                          className="w-5 h-5 accent-primary cursor-pointer"
-                        />
-                      </label>
-
-                      {/* 2. SC / ST Category */}
-                      <label className="flex items-center justify-between p-space-md bg-surface-container-lowest rounded shadow-xs border border-outline-variant cursor-pointer transition-colors">
-                        <div className="flex items-start gap-space-sm">
-                          <span className="text-xl">🏛️</span>
-                          <div className="flex flex-col">
-                            <span className="font-body-md text-body-md font-bold text-on-surface">{t.scstLabel}</span>
-                            <span className="font-label-ledger text-label-ledger text-tertiary font-semibold">{t.scstBenefit}</span>
-                          </div>
-                        </div>
-                        <input
-                          type="checkbox"
-                          checked={isScSt}
-                          onChange={(e) => setIsScSt(e.target.checked)}
-                          className="w-5 h-5 accent-primary cursor-pointer"
-                        />
-                      </label>
-
-                      {/* 3. Greenfield (New Enterprise) */}
-                      <label className="flex items-center justify-between p-space-md bg-surface-container-lowest rounded shadow-xs border border-outline-variant cursor-pointer transition-colors">
-                        <div className="flex items-start gap-space-sm">
-                          <span className="text-xl">🌱</span>
-                          <div className="flex flex-col">
-                            <span className="font-body-md text-body-md font-bold text-on-surface">{t.greenfieldLabel}</span>
-                            <span className="font-label-ledger text-label-ledger text-secondary font-semibold">{t.greenfieldBenefit}</span>
-                          </div>
-                        </div>
-                        <input
-                          type="checkbox"
-                          checked={isGreenfield}
-                          onChange={(e) => setIsGreenfield(e.target.checked)}
-                          className="w-5 h-5 accent-primary cursor-pointer"
-                        />
-                      </label>
-
-                      {/* 4. Rural Location */}
-                      <label className="flex items-center justify-between p-space-md bg-surface-container-lowest rounded shadow-xs border border-outline-variant cursor-pointer transition-colors">
-                        <div className="flex items-start gap-space-sm">
-                          <span className="text-xl">📍</span>
-                          <div className="flex flex-col">
-                            <span className="font-body-md text-body-md font-bold text-on-surface">{t.ruralLabel}</span>
-                            <span className="font-label-ledger text-label-ledger text-on-surface-variant font-semibold">{t.ruralBenefit}</span>
-                          </div>
-                        </div>
-                        <input
-                          type="checkbox"
-                          checked={isRural}
-                          onChange={(e) => setIsRural(e.target.checked)}
-                          className="w-5 h-5 accent-primary cursor-pointer"
-                        />
-                      </label>
+                    <div className="relative rounded-xl bg-white border border-slate-300 focus-within:border-[#d95c2e] focus-within:ring-2 focus-within:ring-[#d95c2e]/20 transition-all overflow-hidden shadow-2xs">
+                      <select
+                        id="block-location-select"
+                        value={blockKey}
+                        onChange={(e) => setBlockKey(e.target.value)}
+                        className="w-full bg-transparent px-3 py-2.5 text-sm font-bold text-slate-900 focus:outline-none appearance-none cursor-pointer"
+                      >
+                        <option value="patan">पाटन (Patan) — दुर्ग, छत्तीसगढ़ (District: 382)</option>
+                        <option value="dhamdha">धमधा (Dhamdha) — दुर्ग, छत्तीसगढ़ (District: 383)</option>
+                        <option value="durg_rural">दुर्ग ग्रामीण (Durg Rural) — दुर्ग, छत्तीसगढ़ (District: 381)</option>
+                        <option value="arang">आरंग (Arang) — रायपुर, छत्तीसगढ़ (District: 401)</option>
+                      </select>
+                      <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-500">
+                        <span className="material-symbols-outlined text-[20px]">arrow_drop_down</span>
+                      </div>
                     </div>
                   </div>
 
-                  {/* Primary CTA Button */}
-                  <button
-                    type="button"
-                    onClick={handleFindSchemes}
-                    disabled={loading}
-                    className="w-full py-space-md px-space-lg bg-primary text-on-primary font-headline-sm text-headline-sm font-bold rounded shadow-md hover:bg-primary-container hover:text-on-primary-container transition-all flex items-center justify-center gap-space-sm disabled:opacity-50 cursor-pointer"
-                  >
-                    <span className="material-symbols-outlined text-[24px]">
-                      {loading ? "hourglass_top" : "search_check"}
+                  <div className="pt-2 border-t border-slate-200/60 mt-2 flex items-center justify-between text-[11px] text-slate-600">
+                    <span className="truncate max-w-[190px] font-medium">
+                      {selectedBlock.branchName.split("—")[0].trim()}
                     </span>
-                    <span>{loading ? t.searchingBtn : t.findSchemesBtn}</span>
-                  </button>
+                    <span className="font-bold text-[#d95c2e]">
+                      {selectedBlock.distanceKm}
+                    </span>
+                  </div>
                 </div>
+              </div>
+
+              {/* 3. Proposed Enterprise Trade Category (Dropdown with All Businesses) */}
+              <div className="flex flex-col gap-2 p-5 rounded-xl bg-slate-50 border border-slate-200/90">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="material-symbols-outlined text-[#d95c2e] text-xl">storefront</span>
+                    <label className="text-xs font-bold uppercase tracking-wider text-slate-800" htmlFor="trade-category-select">
+                      {t.tradeLabel}
+                    </label>
+                  </div>
+                  <span className="text-xs text-slate-500 font-medium bg-white px-2.5 py-1 rounded-full border border-slate-200">
+                    {Object.keys(t.trades).length} व्यवसाय उपलब्ध (Trades Available)
+                  </span>
+                </div>
+
+                <div className="relative">
+                  <select
+                    id="trade-category-select"
+                    value={tradeCategory}
+                    onChange={(e) => setTradeCategory(e.target.value)}
+                    className="w-full appearance-none rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-bold text-slate-900 focus:border-[#d95c2e] focus:outline-none focus:ring-2 focus:ring-[#d95c2e]/20 transition-all cursor-pointer shadow-2xs"
+                  >
+                    {Object.entries(t.trades).map(([id, info]) => (
+                      <option key={id} value={id}>
+                        {info.icon ? `${info.icon} ` : ""}{info.title} — {info.sub}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-500">
+                    <span className="material-symbols-outlined text-xl">expand_more</span>
+                  </div>
+                </div>
+
+                {t.trades[tradeCategory] && (
+                  <div className="flex items-center gap-2 text-xs text-slate-600 bg-white p-2.5 rounded-lg border border-slate-200/70">
+                    <span className="text-base">{t.trades[tradeCategory].icon}</span>
+                    <span className="font-semibold text-slate-800">{t.trades[tradeCategory].title}</span>
+                    <span className="text-slate-400">•</span>
+                    <span>{t.trades[tradeCategory].sub}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* 4. Affirmative Subventions & Quotas (Clean Dropdowns Format) */}
+              <div className="rounded-xl bg-slate-50 border border-slate-200/90 p-5 flex flex-col gap-4">
+                <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-200/60">
+                  <div className="flex items-center gap-2">
+                    <span className="material-symbols-outlined text-[#d95c2e] text-xl">verified_user</span>
+                    <div>
+                      <h3 className="text-sm font-bold text-slate-900">{t.concessionsTitle}</h3>
+                      <p className="text-xs text-slate-500">{t.concessionsSub}</p>
+                    </div>
+                  </div>
+                  <span className="px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 text-xs font-bold border border-emerald-200">
+                    विशेष सरकारी रियायतें
+                  </span>
+                </div>
+
+                {/* 2x2 Clean Dropdown Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Dropdown 1: Social Category Quota */}
+                  <div className="flex flex-col gap-1.5 bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5" htmlFor="quota-category-select">
+                        <span>🏛️</span>
+                        <span>{t.scstLabel}</span>
+                      </label>
+                      <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                        0.50% छूट
+                      </span>
+                    </div>
+                    <div className="relative">
+                      <select
+                        id="quota-category-select"
+                        value={isScSt ? "sc_st" : "general"}
+                        onChange={(e) => setIsScSt(e.target.value === "sc_st")}
+                        className="w-full appearance-none rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs sm:text-sm font-semibold text-slate-800 focus:border-[#d95c2e] focus:outline-none focus:ring-2 focus:ring-[#d95c2e]/20 transition-all cursor-pointer"
+                      >
+                        <option value="general">
+                          {lang === "en" ? "General Category" : "सामान्य वर्ग (General Category)"}
+                        </option>
+                        <option value="sc_st">
+                          {lang === "en" ? "SC / ST Category (0.50% Subvention & Quota)" : "अ.जा. / अ.ज.जा. वर्ग (SC / ST Category) — 0.50% छूट व SCA कोटा"}
+                        </option>
+                      </select>
+                      <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-500">
+                        <span className="material-symbols-outlined text-lg">expand_more</span>
+                      </div>
+                    </div>
+                    <p className="text-[11px] text-slate-500">{t.scstBenefit}</p>
+                  </div>
+
+                  {/* Dropdown 2: Women Entrepreneur */}
+                  <div className="flex flex-col gap-1.5 bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5" htmlFor="quota-women-select">
+                        <span>👩‍💼</span>
+                        <span>{t.womenLabel}</span>
+                      </label>
+                      <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                        1.00% छूट
+                      </span>
+                    </div>
+                    <div className="relative">
+                      <select
+                        id="quota-women-select"
+                        value={isWomen ? "women" : "general"}
+                        onChange={(e) => setIsWomen(e.target.value === "women")}
+                        className="w-full appearance-none rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs sm:text-sm font-semibold text-slate-800 focus:border-[#d95c2e] focus:outline-none focus:ring-2 focus:ring-[#d95c2e]/20 transition-all cursor-pointer"
+                      >
+                        <option value="women">
+                          {lang === "en" ? "Women Entrepreneur (1.00% Interest Rebate)" : "महिला उद्यमी (Women Entrepreneur) — 1.00% वार्षिक ब्याज छूट"}
+                        </option>
+                        <option value="general">
+                          {lang === "en" ? "General / Male Entrepreneur" : "अन्य / सामान्य उद्यमी (General Entrepreneur)"}
+                        </option>
+                      </select>
+                      <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-500">
+                        <span className="material-symbols-outlined text-lg">expand_more</span>
+                      </div>
+                    </div>
+                    <p className="text-[11px] text-slate-500">{t.womenBenefit}</p>
+                  </div>
+
+                  {/* Dropdown 3: Greenfield Enterprise */}
+                  <div className="flex flex-col gap-1.5 bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5" htmlFor="quota-greenfield-select">
+                        <span>🌱</span>
+                        <span>{t.greenfieldLabel}</span>
+                      </label>
+                      <span className="text-[10px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200">
+                        Stand-Up India
+                      </span>
+                    </div>
+                    <div className="relative">
+                      <select
+                        id="quota-greenfield-select"
+                        value={isGreenfield ? "greenfield" : "existing"}
+                        onChange={(e) => setIsGreenfield(e.target.value === "greenfield")}
+                        className="w-full appearance-none rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs sm:text-sm font-semibold text-slate-800 focus:border-[#d95c2e] focus:outline-none focus:ring-2 focus:ring-[#d95c2e]/20 transition-all cursor-pointer"
+                      >
+                        <option value="greenfield">
+                          {lang === "en" ? "Greenfield Unit (New Enterprise)" : "नवीन उद्यम (New / Greenfield Unit) — स्टैंड-अप इंडिया अनिवार्य शर्त"}
+                        </option>
+                        <option value="existing">
+                          {lang === "en" ? "Existing Enterprise Expansion" : "मौजूदा उद्यम विस्तार (Existing Business Expansion)"}
+                        </option>
+                      </select>
+                      <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-500">
+                        <span className="material-symbols-outlined text-lg">expand_more</span>
+                      </div>
+                    </div>
+                    <p className="text-[11px] text-slate-500">{t.greenfieldBenefit}</p>
+                  </div>
+
+                  {/* Dropdown 4: Location Quota */}
+                  <div className="flex flex-col gap-1.5 bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5" htmlFor="quota-location-select">
+                        <span>📍</span>
+                        <span>{t.ruralLabel}</span>
+                      </label>
+                      <span className="text-[10px] font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200">
+                        शाखा आवंटन
+                      </span>
+                    </div>
+                    <div className="relative">
+                      <select
+                        id="quota-location-select"
+                        value={isRural ? "rural" : "urban"}
+                        onChange={(e) => setIsRural(e.target.value === "rural")}
+                        className="w-full appearance-none rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs sm:text-sm font-semibold text-slate-800 focus:border-[#d95c2e] focus:outline-none focus:ring-2 focus:ring-[#d95c2e]/20 transition-all cursor-pointer"
+                      >
+                        <option value="rural">
+                          {lang === "en" ? "Rural Branch Location (Priority)" : "ग्रामीण क्षेत्र शाखा (Rural Location) — प्राथमिकता आवंटन"}
+                        </option>
+                        <option value="urban">
+                          {lang === "en" ? "Urban / Semi-Urban Branch" : "शहरी / अर्ध-शहरी शाखा (Urban / Semi-Urban Branch)"}
+                        </option>
+                      </select>
+                      <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-500">
+                        <span className="material-symbols-outlined text-lg">expand_more</span>
+                      </div>
+                    </div>
+                    <p className="text-[11px] text-slate-500">{t.ruralBenefit}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* 5. Primary Action CTA Button (Centered, full prominence, MyGov style) */}
+              <div className="pt-2 flex justify-center">
+                <button
+                  type="button"
+                  onClick={handleFindSchemes}
+                  disabled={loading}
+                  className="w-full sm:w-auto min-w-[320px] py-4 px-8 bg-[#d95c2e] hover:bg-[#c24e23] text-white font-bold text-base rounded-xl shadow-sm hover:shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                >
+                  <span className="material-symbols-outlined text-[24px]">
+                    {loading ? "hourglass_top" : "search_check"}
+                  </span>
+                  <span>{loading ? t.searchingBtn : t.findSchemesBtn}</span>
+                </button>
               </div>
             </div>
 
@@ -1362,8 +1621,8 @@ export default function SchemeMatcherPage() {
                                 {t.branchHeading} <span className="font-normal text-body-sm text-on-surface-variant">{t.branchSub}</span>
                               </h3>
                             </div>
-                            <span className="font-label-ledger text-label-ledger uppercase bg-tertiary text-on-tertiary px-space-xs py-0.5 rounded">
-                              0.0 km
+                            <span className="font-label-ledger text-label-ledger uppercase bg-tertiary text-on-tertiary px-space-xs py-0.5 rounded font-bold">
+                              {selectedBlock.distanceKm}
                             </span>
                           </div>
 
@@ -1371,10 +1630,10 @@ export default function SchemeMatcherPage() {
                             <div className="flex justify-between items-start">
                               <div className="flex flex-col">
                                 <span className="font-headline-sm text-headline-sm font-bold text-on-surface">
-                                  SBI Patan Main Branch
+                                  {selectedBlock.branchName}
                                 </span>
                                 <span className="font-label-ledger text-label-ledger uppercase text-on-surface-variant">
-                                  IFSC: SBIN0010836 • Block: Patan (Durg)
+                                  IFSC: {selectedBlock.ifsc} • Block: {selectedBlock.name} ({selectedBlock.district})
                                 </span>
                               </div>
                               <span className="px-space-sm py-1 bg-surface-container font-label-ledger text-label-ledger uppercase font-bold text-tertiary rounded">
@@ -1387,13 +1646,26 @@ export default function SchemeMatcherPage() {
                                 {t.branchQuotaLabel}
                               </span>
                               <span className="font-headline-sm text-headline-sm font-bold text-primary tabular-nums">
-                                ₹ 18,00,000
+                                {selectedBlock.quotaRemaining || "₹ 18,00,000"}
                               </span>
                             </div>
                             <p className="font-body-sm text-body-sm text-on-surface-variant">
                               <strong>{t.branchRoutingReason}</strong>
                             </p>
                           </div>
+
+                          {/* Interactive Google Maps Spatial Branch Router */}
+                          <div className="w-full">
+                            <SpatialBranchMap
+                              applicantLat={selectedBlock.lat}
+                              applicantLon={selectedBlock.lon}
+                              applicantLabel={`${selectedBlock.name} (${selectedBlock.district})`}
+                              schemeCode={offers[selectedOfferIndex]?.scheme_code}
+                              loanAmount={offers[selectedOfferIndex]?.loan_amount}
+                              lang={lang}
+                            />
+                          </div>
+
 
                           <div className="grid grid-cols-2 gap-space-sm">
                             <div className="p-space-sm bg-surface-container rounded flex flex-col border border-outline-variant/40">
@@ -1724,6 +1996,26 @@ export default function SchemeMatcherPage() {
 
                   {/* Action Buttons Pair */}
                   <div className="flex flex-wrap items-center gap-space-md w-full md:w-auto justify-end">
+                    <a
+                      href="/scheme-matcher/details"
+                      onClick={() => {
+                        try {
+                          sessionStorage.setItem("sahay-scheme-result", JSON.stringify({
+                            margin: Number(margin),
+                            isScSt,
+                            isWomen,
+                            offers,
+                            emiSchedule,
+                            lang
+                          }));
+                        } catch (e) { console.error(e); }
+                      }}
+                      className="flex-1 md:flex-none px-space-lg py-space-md bg-surface-container-high text-on-surface font-headline-sm text-headline-sm font-semibold rounded shadow-xs hover:bg-surface-container-highest transition-all flex items-center justify-center gap-space-xs border border-outline-variant cursor-pointer"
+                    >
+                      <span className="material-symbols-outlined text-[20px]">visibility</span>
+                      <span>{lang === "en" ? "View Full Details" : "पूर्ण विवरण देखें"}</span>
+                    </a>
+
                     <button
                       onClick={() => setPrintModalOpen(true)}
                       className="flex-1 md:flex-none px-space-lg py-space-md bg-surface-container-high text-on-surface font-headline-sm text-headline-sm font-semibold rounded shadow-xs hover:bg-surface-container-highest transition-all flex items-center justify-center gap-space-xs border border-outline-variant cursor-pointer"
@@ -1734,6 +2026,26 @@ export default function SchemeMatcherPage() {
 
                     <a
                       href="/companion"
+                      onClick={() => {
+                        try {
+                          const selectedOffer = offers[selectedOfferIndex] || offers[0];
+                          if (selectedOffer) {
+                            const monthly = emiSchedule?.quarterly_emi
+                              ? Math.round(emiSchedule.quarterly_emi / 3)
+                              : Math.round(selectedOffer.loan_amount / ((selectedOffer.tenure_years || 5) * 12));
+                            sessionStorage.setItem("sahay-chosen-loan", JSON.stringify({
+                              schemeName: selectedOffer.scheme_name,
+                              schemeCode: selectedOffer.scheme_code,
+                              loanAmount: selectedOffer.loan_amount,
+                              monthlyEmi: monthly,
+                              tradeCategory: tradeCategory || "tailor",
+                              applicantName: fullName || "Sunita Sahu",
+                              location: selectedBlock.name,
+                              branchName: selectedBlock.branchName
+                            }));
+                          }
+                        } catch (e) { console.error(e); }
+                      }}
                       className="flex-1 md:flex-none px-space-lg py-space-md bg-primary text-on-primary font-headline-sm text-headline-sm font-bold rounded shadow-md hover:bg-primary-container hover:text-on-primary-container transition-all flex items-center justify-center gap-space-xs"
                     >
                       <span>{t.companionBtn}</span>
@@ -1763,13 +2075,13 @@ export default function SchemeMatcherPage() {
 
             <div className="p-space-md bg-surface-container-low rounded flex flex-col gap-space-xs font-tabular-record text-tabular-record border border-outline-variant/50">
               <div className="flex justify-between py-1 border-b border-outline-variant/30">
-                <span>Applicant Name:</span> <strong className="text-on-surface">Sunita Sahu (Patan Block)</strong>
+                <span>Applicant Name:</span> <strong className="text-on-surface">{fullName || "Sunita Sahu"} ({selectedBlock.name})</strong>
               </div>
               <div className="flex justify-between py-1 border-b border-outline-variant/30">
                 <span>Proposed Enterprise:</span> <strong className="text-on-surface">{t.trades[tradeCategory]?.title || tradeCategory}</strong>
               </div>
               <div className="flex justify-between py-1 border-b border-outline-variant/30">
-                <span>Servicing Bank Branch:</span> <strong className="text-on-surface">SBI Patan Main Branch (SBIN0010836)</strong>
+                <span>Servicing Bank Branch:</span> <strong className="text-on-surface">{selectedBlock.branchName} ({selectedBlock.ifsc})</strong>
               </div>
               <div className="flex justify-between py-1 border-b border-outline-variant/30">
                 <span>Recommended Scheme:</span> <strong className="text-tertiary">{activeOffer.scheme_name}</strong>
@@ -1801,27 +2113,13 @@ export default function SchemeMatcherPage() {
         </div>
       )}
 
-      {/* Footer */}
-      <footer className="w-full bg-surface-container-low border-t border-outline-variant py-space-xl mt-12">
-        <div className="max-w-7xl mx-auto px-margin md:px-margin-tablet lg:px-margin-desktop flex flex-col md:flex-row items-center justify-between gap-space-lg">
-          <div className="flex flex-col gap-space-xs text-center md:text-left">
-            <div className="flex items-center justify-center md:justify-start gap-space-xs">
-              <span className="material-symbols-outlined text-primary text-[20px]">verified</span>
-              <span className="font-headline-sm text-headline-sm text-on-surface font-semibold">{t.appTitle} • Rural Credit Ledger</span>
-            </div>
-            <p className="font-body-sm text-body-sm text-on-surface-variant max-w-xl">
-              {t.formDesc}
-            </p>
-          </div>
-          <div className="flex items-center gap-space-xl font-label-ledger text-label-ledger uppercase text-on-surface-variant">
-            <div className="flex items-center gap-space-xs">
-              <span className="material-symbols-outlined text-tertiary text-[18px]">lock</span>
-              <span>Suraksha Code: CSC-VERIFIED</span>
-            </div>
-            <span>© 2026 Sahay-AI Ledger</span>
-          </div>
-        </div>
-      </footer>
+      {/* Mock DigiLocker / MeriPehchaan Sandbox Modal */}
+      <MockDigiLockerModal
+        isOpen={digilockerModalOpen}
+        onClose={() => setDigilockerModalOpen(false)}
+        onSuccess={handleDigiLockerSuccess}
+        language={lang}
+      />
     </div>
   );
 }

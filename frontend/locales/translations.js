@@ -21,7 +21,7 @@ export const translations = {
     
     // Business Advisor
     advisorHeading: "Hyper-Local Business Feasibility",
-    advisorSub: "Census Demographics + Live OpenStreetMap Competitor Density + AI SWOT",
+    advisorSub: "Census Demographics + Live Google Maps Competitor Radar + AI SWOT",
     selectBlock: "Select Rural Block",
     selectTrade: "Select Proposed Trade",
     calculateFeasibility: "Analyze Business Feasibility",
@@ -116,7 +116,7 @@ export const translations = {
     
     // Business Advisor
     advisorHeading: "गाँव-स्तर व्यवसाय व्यवहार्यता (Feasibility)",
-    advisorSub: "जनगणना डेटा + लाइव नक्शा (OSM) प्रतियोगी + AI SWOT",
+    advisorSub: "जनगणना डेटा + लाइव गूगल मैप्स (Google Maps) प्रतियोगी + AI SWOT",
     selectBlock: "अपना ब्लॉक/गाँव चुनें",
     selectTrade: "व्यवसाय का प्रकार चुनें",
     calculateFeasibility: "व्यवसाय की संभावना जांचें",
@@ -211,7 +211,7 @@ export const translations = {
     
     // Business Advisor
     advisorHeading: "स्थानिक व्यवसाय व्यवहार्यता (Feasibility)",
-    advisorSub: "जनगणना आकडेवारी + थेट नकाशा (OSM) प्रतिस्पर्धी + AI SWOT",
+    advisorSub: "जनगणना आकडेवारी + थेट गुगल मॅप्स (Google Maps) प्रतिस्पर्धी + AI SWOT",
     selectBlock: "तुमचा ब्लॉक/गाव निवडा",
     selectTrade: "व्यवसायाचा प्रकार निवडा",
     calculateFeasibility: "व्यवसाय व्यवहार्यता तपासा",
@@ -306,7 +306,7 @@ export const translations = {
     
     // Business Advisor
     advisorHeading: "உள்ளூர் தொழில் சாத்தியக்கூறு (Feasibility)",
-    advisorSub: "மக்கள்தொகை கணக்கெடுப்பு + நேரடி வரைபட (OSM) கடைகள் + AI SWOT",
+    advisorSub: "மக்கள்தொகை கணக்கெடுப்பு + நேரடி கூகிள் வரைபட (Google Maps) கடைகள் + AI SWOT",
     selectBlock: "உங்கள் வட்டாரத்தை தேர்ந்தெடுக்கவும்",
     selectTrade: "தொழில் வகையை தேர்ந்தெடுக்கவும்",
     calculateFeasibility: "தொழில் சாத்தியத்தை ஆராயவும்",

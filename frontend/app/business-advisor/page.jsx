@@ -1,11 +1,27 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import dynamic from "next/dynamic";
 import Navbar from "../../components/Navbar";
 import VoiceSummaryPlayer from "../../components/VoiceSummaryPlayer";
 import VoiceInputButton from "../../components/VoiceInputButton";
 import { unlockAudio } from "../../lib/voiceAudio";
 import { buildAdvisorNarration } from "../../lib/narration";
+
+const CompetitorMap = dynamic(
+  () => import("../../components/CompetitorMap"),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="w-full h-[240px] bg-slate-50 border border-slate-200 rounded-xl flex flex-col items-center justify-center gap-2 text-slate-500 text-xs font-semibold animate-pulse">
+        <span className="material-symbols-outlined text-[28px] text-[#d95c2e] animate-spin">
+          progress_activity
+        </span>
+        <span>प्रतियोगी नक्शा लोड हो रहा है...</span>
+      </div>
+    ),
+  }
+);
 
 // Multi-lingual dictionary for Business Advisor
 const ADVISOR_I18N = {
@@ -13,7 +29,7 @@ const ADVISOR_I18N = {
     formNo: "प्रपत्र संख्या / Form No. BFA-88",
     registryIndex: "रजिस्ट्री इंडेक्स: CG-DURG",
     tagline: "आपके व्यवसाय हेतु स्थानीय बाज़ार व ऋण विश्लेषण",
-    censusBadge: "CENSUS 2011 एवं OSM सत्यापित",
+    censusBadge: "CENSUS 2011 एवं Google Maps सत्यापित",
     part1Badge: "खंड-अ / PART-I",
     frameworkTitle: "National Rural Enterprise Advisory Framework",
     pageHeading: "व्यापार व्यवहार्यता व ऋण सलाहकार",
@@ -62,7 +78,7 @@ const ADVISOR_I18N = {
 
     demoCardTitle: "जनसांख्यिकी एवं स्थानीय बाजार विश्लेषण",
     engine1Badge: "बाज़ार विश्लेषण",
-    demoSource: "स्रोत: Census 2011 Primary Abstract & OSM Live API",
+    demoSource: "स्रोत: Census 2011 Primary Abstract & Google Maps API",
     liveVerified: "🟢 Live Verified",
     totalPopLabel: "ब्लॉक कुल जनसंख्या",
     totalPopSub: "कुल ग्रामीण एवं अर्ध-नगरीय क्षेत्र",
@@ -73,7 +89,7 @@ const ADVISOR_I18N = {
     femaleWorkforceLabel: "महिला कार्यबल भागीदारी",
     femaleWorkforceSub: "उच्च विकास व उपभोग क्षमता",
     dominantEconLabel: "प्रमुख आर्थिक गतिविधि",
-    competitorDensityLabel: "लाइव प्रतिस्पर्धी घनत्व (OpenStreetMap)",
+    competitorDensityLabel: "लाइव प्रतिस्पर्धी घनत्व (Google Maps)",
     moderateCompBadge: "मध्यम प्रतिस्पर्धा — उच्च मांग",
     demoScore: "जनसांख्यिकी सूचकांक स्कोर: 8.4 / 10 (व्यवहार्य)",
 
@@ -165,7 +181,7 @@ const ADVISOR_I18N = {
     formNo: "Form No. BFA-88",
     registryIndex: "Registry Index: CG-DURG",
     tagline: "Local market and loan analysis for your business",
-    censusBadge: "CENSUS 2011 & OSM VERIFIED",
+    censusBadge: "CENSUS 2011 & Google Maps Verified",
     part1Badge: "PART-I / Section A",
     frameworkTitle: "National Rural Enterprise Advisory Framework",
     pageHeading: "Rural Business Feasibility & Credit Advisor",
@@ -214,7 +230,7 @@ const ADVISOR_I18N = {
 
     demoCardTitle: "Census Demographics & Market Reality",
     engine1Badge: "Market Analysis",
-    demoSource: "Source: Census 2011 Primary Abstract & OSM Live API",
+    demoSource: "Source: Census 2011 Primary Abstract & Google Maps API",
     liveVerified: "🟢 Live Verified",
     totalPopLabel: "Total Block Population",
     totalPopSub: "Rural & Peri-urban Aggregated",
@@ -225,7 +241,7 @@ const ADVISOR_I18N = {
     femaleWorkforceLabel: "Female Workforce Participation",
     femaleWorkforceSub: "Strong Expansion Headroom",
     dominantEconLabel: "Dominant Economic Activity",
-    competitorDensityLabel: "Live Competitor Density (OpenStreetMap)",
+    competitorDensityLabel: "Live Competitor Density (Google Maps)",
     moderateCompBadge: "Moderate Competition — High Demand",
     demoScore: "Demographic Viability Index: 8.4 / 10 (Highly Viable)",
 
@@ -317,7 +333,7 @@ const ADVISOR_I18N = {
     formNo: "फॉर्म क्र. BFA-88",
     registryIndex: "नोंदणी निर्देशांक: CG-DURG",
     tagline: "आपल्या व्यवसायासाठी स्थानिक बाजार व कर्ज विश्लेषण",
-    censusBadge: "CENSUS 2011 व OSM सत्यापित",
+    censusBadge: "CENSUS 2011 व Google Maps सत्यापित",
     part1Badge: "भाग-अ / PART-I",
     frameworkTitle: "National Rural Enterprise Advisory Framework",
     pageHeading: "व्यवसाय व्यवहार्यता व कर्ज सल्लागार",
@@ -366,7 +382,7 @@ const ADVISOR_I18N = {
 
     demoCardTitle: "जनसांख्यिकी व स्थानिक बाजार विश्लेषण",
     engine1Badge: "बाजार विश्लेषण",
-    demoSource: "स्रोत: Census 2011 Primary Abstract & OSM Live API",
+    demoSource: "स्रोत: Census 2011 Primary Abstract & Google Maps API",
     liveVerified: "🟢 Live Verified",
     totalPopLabel: "ब्लॉकची एकूण लोकसंख्या",
     totalPopSub: "एकूण ग्रामीण व निम-शहरी क्षेत्र",
@@ -377,7 +393,7 @@ const ADVISOR_I18N = {
     femaleWorkforceLabel: "महिला कार्यबल सहभाग",
     femaleWorkforceSub: "उच्च विकास व खरेदी क्षमता",
     dominantEconLabel: "प्रमुख आर्थिक उपक्रम",
-    competitorDensityLabel: "थेट स्पर्धा घनता (OpenStreetMap)",
+    competitorDensityLabel: "थेट स्पर्धा घनता (Google Maps)",
     moderateCompBadge: "मध्यम स्पर्धा — प्रचंड मागणी",
     demoScore: "व्यवहार्यता निर्देशांक: 8.4 / 10 (अति-अनुकूल)",
 
@@ -469,7 +485,7 @@ const ADVISOR_I18N = {
     formNo: "படிவம் எண்: BFA-88",
     registryIndex: "பதிவு எண்: CG-DURG",
     tagline: "உங்கள் வணிகத்திற்கான உள்ளூர் சந்தை மற்றும் கடன் பகுப்பாய்வு",
-    censusBadge: "CENSUS 2011 & OSM சரிபார்க்கப்பட்டது",
+    censusBadge: "CENSUS 2011 & Google Maps சரிபார்க்கப்பட்டது",
     part1Badge: "பகுதி-அ / PART-I",
     frameworkTitle: "National Rural Enterprise Advisory Framework",
     pageHeading: "கிராமப்புற தொழில் சாத்தியக்கூறு மற்றும் கடன் ஆலோசகர்",
@@ -518,7 +534,7 @@ const ADVISOR_I18N = {
 
     demoCardTitle: "மக்கள் தொகை மற்றும் உள்ளூர் சந்தை பகுப்பாய்வு",
     engine1Badge: "சந்தை பகுப்பாய்வு",
-    demoSource: "ஆதாரம்: Census 2011 Primary Abstract & OSM Live API",
+    demoSource: "ஆதாரம்: Census 2011 Primary Abstract & Google Maps API",
     liveVerified: "🟢 Live Verified",
     totalPopLabel: "வட்டார மொத்த மக்கள் தொகை",
     totalPopSub: "கிராமப்புற மற்றும் புறநகர் பகுதி",
@@ -529,7 +545,7 @@ const ADVISOR_I18N = {
     femaleWorkforceLabel: "பெண்கள் பணியாளர் பங்கேற்பு",
     femaleWorkforceSub: "உயர் வளர்ச்சி மற்றும் வாங்கும் திறன்",
     dominantEconLabel: "முக்கிய பொருளாதார நடவடிக்கை",
-    competitorDensityLabel: "நேரலை போட்டி அடர்த்தி (OpenStreetMap)",
+    competitorDensityLabel: "நேரலை போட்டி அடர்த்தி (Google Maps)",
     moderateCompBadge: "மிதமான போட்டி — அதிக தேவை",
     demoScore: "சாத்தியக்கூறு குறியீடு: 8.4 / 10 (மிகவும் சாத்தியமானது)",
 
@@ -699,6 +715,34 @@ const BLOCK_CONFIG = {
 
 export default function BusinessAdvisorPage() {
   const [lang, setLang] = useState("hi");
+
+  // Sync language with session on mount and listen for live changes
+  useEffect(() => {
+    try {
+      const stored = sessionStorage.getItem("sahay-session-lang") || localStorage.getItem("sahay-preferred-lang");
+      if (stored) {
+        setLang(stored);
+      }
+    } catch (e) {}
+
+    const handleLangEvent = (e) => {
+      if (e.detail) {
+        setLang(e.detail);
+      }
+    };
+    window.addEventListener("sahay-language-change", handleLangEvent);
+    return () => window.removeEventListener("sahay-language-change", handleLangEvent);
+  }, []);
+
+  const handleSetLang = (newLang) => {
+    setLang(newLang);
+    try {
+      sessionStorage.setItem("sahay-session-lang", newLang);
+      sessionStorage.setItem("sahay-session-chosen", "true");
+      localStorage.setItem("sahay-preferred-lang", newLang);
+      window.dispatchEvent(new CustomEvent("sahay-language-change", { detail: newLang }));
+    } catch (e) {}
+  };
   const [assistedMode, setAssistedMode] = useState(true); // true = Sakhi / CSC, false = Self
   const [viewMode, setViewMode] = useState("borrower"); // "borrower" (simple) or "banker" (slip)
 
@@ -809,6 +853,27 @@ export default function BusinessAdvisorPage() {
       if (res.ok) {
         const data = await res.json();
         setApiReport(data);
+        try {
+          sessionStorage.setItem("sahay-chosen-loan", JSON.stringify({
+            schemeName: data?.best_scheme?.scheme_name || (lang === "en" ? "Pradhan Mantri Mudra Yojana (PMMY) — Kishore Category" : "प्रधानमंत्री मुद्रा योजना (PMMY) — किशोर श्रेणी"),
+            schemeCode: data?.best_scheme?.scheme_code || "PMMY_MAHILA_UDYAMI",
+            loanAmount: data?.best_scheme?.loan_amount || loanAmount,
+            monthlyEmi: data?.rural_metrics?.monthly_emi || monthlyEmi,
+            tradeCategory: selectedTrade,
+            applicantName: applicantName
+          }));
+          sessionStorage.setItem("sahay-profile-handoff", JSON.stringify({
+            fullName: fullName.split("(")[0].trim(),
+            margin: marginNum,
+            annualIncome: annualIncome,
+            blockKey: blockKey,
+            tradeCategory: tradeKey,
+            isWomen: isWomen,
+            isScSt: isScSt,
+            isGreenfield: isGreenfield,
+            isRural: true,
+          }));
+        } catch (e) {}
       } else {
         console.warn("Backend API responded with non-200, using local grounded calculation");
       }
@@ -899,7 +964,7 @@ export default function BusinessAdvisorPage() {
   return (
     <div className="bg-surface font-body-md text-on-surface antialiased min-h-screen selection:bg-primary-fixed selection:text-on-primary-fixed">
       {/* Top Standardized Header Navigation with Language Sync */}
-      <Navbar activePage="business-advisor" lang={lang} setLang={setLang} />
+      <Navbar activePage="business-advisor" lang={lang} setLang={handleSetLang} />
 
       <main className="w-full pt-20 bg-surface min-h-[calc(100vh-140px)]">
         <div className="flex flex-col w-full">
@@ -1031,29 +1096,37 @@ export default function BusinessAdvisorPage() {
                         applying — never trusting free-text output for a key that
                         indexes into config objects. */}
                     <div className="border-2 border-[#845400] bg-[#fbebda]/50 p-5 flex flex-col items-center gap-3 rounded-none">
-                      <p className="font-sans font-bold text-base text-[#221a10] text-center">
-                        {lang === "en"
-                          ? "Tell us about yourself and your business — we'll fill the form for you"
-                          : "अपने बारे में और अपने व्यवसाय के बारे में बोलें — हम फ़ॉर्म भर देंगे"}
-                      </p>
+                      <div className="flex items-center gap-2">
+                        <span className="material-symbols-outlined text-[#845400] text-2xl">mic</span>
+                        <p className="font-sans font-bold text-base text-[#221a10] text-center">
+                          {lang === "en"
+                            ? "Voice-First Auto Fill: Tell us about yourself and your business"
+                            : "बोलकर पूरा फॉर्म भरें: अपने बारे में और अपने व्यवसाय के बारे में बताएं"}
+                        </p>
+                      </div>
                       <VoiceInputButton
                         language={lang}
                         fields={{
-                          full_name: "the person's full name, as spoken",
-                          available_margin: "the amount of money in rupees the person has available as their own capital, as a plain number",
+                          full_name: "the person's full name, as spoken (e.g. Milan, Sunita Sahu); null if not mentioned",
+                          available_margin: "the amount of money in rupees the person has available as their own capital/margin to invest, as a plain number (e.g. 50000); null if not mentioned",
+                          annual_income: "the annual gross family income in rupees, as a plain number (e.g. 200000 for 2 lakh); null if not mentioned",
                           block: "one of exactly: patan, dhamdha, durg_rural, arang — whichever village/block the person mentions; null if none is clearly mentioned",
-                          trade_category: "one of exactly: tailor, dairy, retail, vegetable_vendor, electronics_repair, incense_craft — closest match to the business they want to start (tailor = sewing/boutique, dairy = milk/cattle, retail = grocery/kirana shop, vegetable_vendor = selling vegetables/fruit, electronics_repair = mobile/electronics repair or CSC centre, incense_craft = agarbatti/handicrafts); null if unclear",
-                          is_women: "true if the speaker identifies as a woman, false if a man, null if unclear",
-                          is_sc_st: "true if the speaker says they belong to SC or ST category, false if they explicitly say they do not, null if not mentioned",
-                          is_greenfield: "true if this is a brand-new business, false if expanding an existing one, null if unclear",
+                          trade_category: "one of exactly: tailor, dairy, retail, vegetable_vendor, electronics_repair, incense_craft — closest match to the business they want to start (tailor = sewing/boutique/garments, dairy = milk/cattle/dairy, retail = grocery/kirana shop, vegetable_vendor = selling vegetables/fruit, electronics_repair = mobile/electronics repair or CSC centre, incense_craft = agarbatti/handicrafts); null if unclear",
+                          is_women: "true if the speaker identifies as a woman/female, false if a man/male, null if unclear",
+                          is_sc_st: "true if the speaker says they belong to SC or ST category, false if general/OBC, null if not mentioned",
+                          is_greenfield: "true if this is a brand-new business/venture, false if expanding an existing one, null if unclear",
                         }}
                         onTranscript={(text) => setVoiceHeard(text)}
                         onResult={(values) => {
                           const VALID_BLOCKS = ["patan", "dhamdha", "durg_rural", "arang"];
                           const VALID_TRADES = ["tailor", "dairy", "retail", "vegetable_vendor", "electronics_repair", "incense_craft"];
-                          if (values.full_name) setFullName(String(values.full_name));
+                          if (values.full_name && typeof values.full_name === "string" && values.full_name.trim()) {
+                            setFullName(values.full_name.trim());
+                          }
                           const margin = Math.round(Number(values.available_margin));
                           if (margin > 0) setAvailableMargin(margin);
+                          const inc = Math.round(Number(values.annual_income));
+                          if (inc > 0) setAnnualIncome(inc.toLocaleString("en-IN"));
                           if (VALID_BLOCKS.includes(values.block)) setBlockKey(values.block);
                           if (VALID_TRADES.includes(values.trade_category)) setTradeKey(values.trade_category);
                           if (typeof values.is_women === "boolean") setIsWomen(values.is_women);
@@ -1061,16 +1134,25 @@ export default function BusinessAdvisorPage() {
                           if (typeof values.is_greenfield === "boolean") setIsGreenfield(values.is_greenfield);
                         }}
                       />
-                      {voiceHeard && (
-                        <p className="text-sm text-[#514536] text-center max-w-md">
-                          <span className="font-bold">{lang === "en" ? "We heard: " : "हमने सुना: "}</span>
-                          &ldquo;{voiceHeard}&rdquo;
-                          <br />
-                          <span className="text-xs">
+                      {voiceHeard ? (
+                        <div className="mt-2 text-center space-y-1">
+                          <p className="text-sm text-[#514536] max-w-md mx-auto">
+                            <span className="font-bold">{lang === "en" ? "We heard: " : "हमने सुना: "}</span>
+                            &ldquo;{voiceHeard}&rdquo;
+                          </p>
+                          <p className="text-xs font-bold text-emerald-800 flex items-center justify-center gap-1">
+                            <span className="material-symbols-outlined text-[15px]">check_circle</span>
                             {lang === "en"
-                              ? "Check the boxes below — you can change anything that's wrong."
-                              : "नीचे के बॉक्स देखें — कुछ गलत हो तो बदल सकते हैं।"}
-                          </span>
+                              ? "Form filled automatically (Name, Capital, Income, Trade, Location)"
+                              : "फ़ॉर्म स्वतः भर गया (नाम, पूंजी, आय, व्यापार श्रेणी, ब्लॉक स्थान)"}
+                          </p>
+                        </div>
+                      ) : (
+                        <p className="text-xs text-[#514536] text-center max-w-lg mt-1 bg-white/70 px-3 py-1.5 border border-[#d6c4b1]">
+                          <span className="font-bold text-[#845400]">{lang === "en" ? "Tip: " : "सुझाव: "}</span>
+                          {lang === "en"
+                            ? 'Speak naturally: e.g. "My name is Milan, I have 50,000 rupees capital, family income is 2 lakh, and I want to start a tailor shop in Patan"'
+                            : 'स्वाभाविक बोलें: उदा. "मेरा नाम मिलन है, पाटन में सिलाई का काम शुरू करना है, मेरे पास 50,000 रुपये पूंजी है और परिवार की आय 2 लाख है"'}
                         </p>
                       )}
                     </div>
@@ -1561,6 +1643,26 @@ export default function BusinessAdvisorPage() {
                                   {t.moderateCompBadge}
                                 </span>
                               </div>
+                            </div>
+
+                            {/* Live Google Maps Competitor Radar */}
+                            <div className="col-span-2 mt-2">
+                              <CompetitorMap
+                                lat={selectedBlock.lat}
+                                lon={selectedBlock.lon}
+                                blockName={selectedBlock.name}
+                                tradeTitle={tradeI18n.title}
+                                tradeKey={tradeKey}
+                                competitorCount={apiReport?.feasibility?.competitor_count || 4}
+                                competitors={apiReport?.feasibility?.competitors}
+                                branchInfo={{
+                                  name: selectedBlock.branchName,
+                                  ifsc: selectedBlock.ifsc,
+                                  lat: selectedBlock.lat + 0.005,
+                                  lon: selectedBlock.lon + 0.004,
+                                }}
+                                lang={lang}
+                              />
                             </div>
                           </div>
                         </div>
@@ -2215,6 +2317,49 @@ export default function BusinessAdvisorPage() {
                           <span className="material-symbols-outlined text-[18px]">send</span>
                           {t.btnForwardBranch}
                         </button>
+                        <a
+                          href="/scheme-matcher"
+                          onClick={() => {
+                            try {
+                              sessionStorage.setItem("sahay-profile-handoff", JSON.stringify({
+                                fullName: fullName.split("(")[0].trim(),
+                                margin: marginNum,
+                                annualIncome: annualIncome,
+                                blockKey: blockKey,
+                                tradeCategory: tradeKey,
+                                isWomen: isWomen,
+                                isScSt: isScSt,
+                                isGreenfield: isGreenfield,
+                                isRural: true,
+                              }));
+                            } catch (e) { console.error(e); }
+                          }}
+                          className="w-full sm:w-auto px-5 py-2.5 bg-[#d95c2e] text-white font-tabular-record text-tabular-record font-bold border-2 border-on-surface flex items-center justify-center gap-2 hover:bg-[#b84a20] transition-none rounded-none cursor-pointer shadow-xs"
+                        >
+                          <span className="material-symbols-outlined text-[18px]">verified</span>
+                          <span>{lang === "en" ? "Proceed to Scheme Matcher (Step 2)" : "आगे बढ़ें: सरकारी योजना चयन (चरण 2)"}</span>
+                          <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
+                        </a>
+                        <a
+                          href="/companion"
+                          onClick={() => {
+                            try {
+                              sessionStorage.setItem("sahay-chosen-loan", JSON.stringify({
+                                schemeName: apiReport?.best_scheme?.scheme_name || (lang === "en" ? "Pradhan Mantri Mudra Yojana (PMMY) — Kishore Category" : "प्रधानमंत्री मुद्रा योजना (PMMY) — किशोर श्रेणी"),
+                                schemeCode: apiReport?.best_scheme?.scheme_code || "PMMY_MAHILA_UDYAMI",
+                                loanAmount: loanAmount,
+                                monthlyEmi: monthlyEmi,
+                                tradeCategory: selectedTrade,
+                                applicantName: applicantName
+                              }));
+                            } catch (e) { console.error(e); }
+                          }}
+                          className="w-full sm:w-auto px-5 py-2.5 bg-[#845400] text-white font-tabular-record text-tabular-record font-bold border-2 border-on-surface flex items-center justify-center gap-2 hover:bg-[#6b4400] transition-none rounded-none cursor-pointer"
+                        >
+                          <span className="material-symbols-outlined text-[18px]">account_balance_wallet</span>
+                          <span>{lang === "en" ? "Go to Loan Companion" : "दैनिक ऋण साथी (Companion) खोलें"}</span>
+                          <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
+                        </a>
                       </div>
                     </div>
                   </>
@@ -2226,31 +2371,6 @@ export default function BusinessAdvisorPage() {
           </div>
         </div>
       </main>
-
-      {/* Standardized Bottom Footer */}
-      <footer className="w-full bg-[#EDE6D6] border-t-2 border-secondary">
-        <div className="border-t border-outline-variant">
-          <div className="max-w-[1200px] mx-auto px-4 py-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 text-on-surface">
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <span className="font-headline-sm text-headline-sm font-bold">Sahay-AI Gramin Udyam Ledger</span>
-                <span className="font-label-ledger text-label-ledger uppercase px-1.5 py-0.5 border border-tertiary text-tertiary font-bold rounded-none">
-                  Statutory Form II-B
-                </span>
-              </div>
-              <p className="font-body-sm text-body-sm text-on-surface-variant">
-                Official Rural Micro-Enterprise & Cooperative Credit Society Advisory Framework. Physical Passbook Record.
-              </p>
-            </div>
-            <div className="flex items-center gap-6 font-tabular-record text-tabular-record text-on-surface-variant">
-              <span className="border-b border-outline pb-0.5">Sahay-AI v1.0</span>
-              <span className="font-body-sm text-body-sm text-on-surface font-semibold">
-                © 2026 Sahay-AI Enterprise Advisory
-              </span>
-            </div>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }

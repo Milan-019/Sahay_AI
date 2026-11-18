@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { translations } from "../locales/translations";
 import Navbar from "../components/Navbar";
+import { LeftLotus, RightLotus } from "../components/LotusAccents";
 
 const BANNER_SLIDES = [
   {
@@ -108,11 +109,148 @@ const BANNER_SLIDES = [
   }
 ];
 
+const LANGUAGES = [
+  { code: "en", label: "English", sub: "Official / Default", native: "English", flag: "🌐" },
+  { code: "hi", label: "हिन्दी", sub: "Hindi", native: "हिन्दी", flag: "🇮🇳" },
+  { code: "mr", label: "मराठी", sub: "Marathi", native: "मराठी", flag: "🇮🇳" },
+  { code: "ta", label: "தமிழ்", sub: "Tamil", native: "தமிழ்", flag: "🇮🇳" },
+];
+
+const HOME_I18N = {
+  en: {
+    heroTitle: "Loan Schemes & Business Advice for Rural Entrepreneurs",
+    heroSub: "Find out which government loan scheme fits you, how much you can borrow, and whether your business idea will work in your area.",
+    changeLang: "Language",
+    visionBadge: "National Vision 2047",
+    quoteHeading: "“One step towards Viksit Bharat”",
+    quoteText: "“When the rural entrepreneur rises with dignity and financial self-reliance, the entire nation moves forward toward a developed India.”",
+    servicesEyebrow: "Our Core Services",
+    servicesTitle: "Direct Institutional Access",
+    schemeCardDesc: "See which loan schemes you qualify for and your monthly payment.",
+    schemeCardCta: "Check schemes",
+    advisorCardDesc: "Check if your business idea will work in your area before you apply.",
+    advisorCardCta: "Check my business idea",
+    companionCardDesc: "Track your loan repayment and required documents after approval.",
+    companionCardCta: "Open my loan tracker",
+    privacyTitle: "Your documents stay private",
+    privacyDesc: "Documents are processed on this device only. Nothing sensitive is sent to outside servers.",
+    cscCta: "CSC Helpline: 14599"
+  },
+  hi: {
+    heroTitle: "ग्रामीण उद्यमियों हेतु ऋण योजना एवं व्यापार सलाह",
+    heroSub: "जानें कि आपके लिए कौन सी सरकारी ऋण योजना उपयुक्त है, आप कितना ऋण ले सकते हैं, और आपका व्यापार विचार आपके क्षेत्र में सफल होगा या नहीं।",
+    changeLang: "भाषा",
+    visionBadge: "विकसित भारत संकल्प 2047",
+    quoteHeading: "“One step towards Viksit Bharat”",
+    quoteText: "“जब गाँव का सूक्ष्म उद्यमी आत्मनिर्भरता और सम्मान के साथ आगे बढ़ता है, तभी विकसित भारत का संकल्प साकार होता है।”",
+    servicesEyebrow: "सहाय-AI की प्रमुख सेवाएं",
+    servicesTitle: "संस्थागत ऋण एवं व्यापार सुविधा",
+    schemeCardDesc: "जानें आप किन ऋण योजनाओं के पात्र हैं और आपकी मासिक किश्त कितनी होगी।",
+    schemeCardCta: "योजना मिलान करें",
+    advisorCardDesc: "आवेदन करने से पहले जानें कि आपका व्यापार विचार आपके क्षेत्र में सफल होगा या नहीं।",
+    advisorCardCta: "व्यापार विश्लेषण देखें",
+    companionCardDesc: "स्वीकृति के बाद अपनी किश्त और आवश्यक दस्तावेज़ों पर नज़र रखें।",
+    companionCardCta: "ऋण साथी खोलें",
+    privacyTitle: "आपके दस्तावेज़ सुरक्षित हैं",
+    privacyDesc: "आपके दस्तावेज केवल इसी उपकरण पर संसाधित होते हैं। कोई भी संवेदनशील जानकारी बाहरी सर्वर पर नहीं भेजी जाती।",
+    cscCta: "सीएससी हेल्पलाइन: 14599"
+  },
+  mr: {
+    heroTitle: "ग्रामीण उद्योजकांसाठी शासकीय कर्ज योजना आणि व्यवसाय सल्ला",
+    heroSub: "आपल्यासाठी कोणती शासकीय कर्ज योजना योग्य आहे, किती कर्ज मिळू शकते आणि आपली व्यवसाय कल्पना यशस्वी होईल का ते जाणून घ्या.",
+    changeLang: "भाषा",
+    visionBadge: "विकसित भारत संकल्प 2047",
+    quoteHeading: "“One step towards Viksit Bharat”",
+    quoteText: "“जेव्हा ग्रामीण सूक्ष्म उद्योजक स्वाभिमानाने आणि आर्थिक स्वावलंबनाने पुढे येतो, तेव्हाच विकसित भारताचा संकल्प साकार होतो.”",
+    servicesEyebrow: "सहाय-AI ची प्रमुख वैशिष्ट्ये",
+    servicesTitle: "संस्थात्मक कर्ज आणि व्यवसाय मार्गदर्शन",
+    schemeCardDesc: "तुम्ही कोणत्या कर्ज योजनांसाठी पात्र आहात आणि मासिक हप्ता किती असेल ते पहा.",
+    schemeCardCta: "योजना तपासा",
+    advisorCardDesc: "अर्ज करण्यापूर्वी तुमची व्यवसाय कल्पना स्थानिक भागात चालेल का ते तपासा.",
+    advisorCardCta: "व्यवसाय कल्पना तपासा",
+    companionCardDesc: "कर्ज मंजुरीनंतर हप्ता परतफेड आणि आवश्यक कागदपत्रांचा मागोवा घ्या.",
+    companionCardCta: "कर्ज मित्र उघडा",
+    privacyTitle: "तुमची कागदपत्रे पूर्णपणे सुरक्षित आहेत",
+    privacyDesc: "कागदपत्रे फक्त याच उपकरणावर प्रक्रिया केली जातात. कोणतीही संवेदनशील माहिती बाहेरील सर्व्हरवर पाठवली जात नाही.",
+    cscCta: "सीएससी हेल्पलाइन: 14599"
+  },
+  ta: {
+    heroTitle: "கிராமப்புற தொழில்முனைவோருக்கான கடன் திட்டங்கள் & வணிக ஆலோசனை",
+    heroSub: "உங்களுக்கு ஏற்ற அரசு கடன் திட்டம் எது, எவ்வளவு கடன் பெறலாம் மற்றும் உங்கள் தொழில் யோசனை உங்கள் பகுதியில் வெற்றிபெறுமா என்பதை அறியுங்கள்.",
+    changeLang: "மொழி",
+    visionBadge: "விக்சித் பாரத் தொலைநோக்கு 2047",
+    quoteHeading: "“One step towards Viksit Bharat”",
+    quoteText: "“கிராமப்புற சிறு தொழில்முனைவோர் சுயமரியாதையுடனும் பொருளாதார தன்னிறைவுடனும் முன்னேறும்போது, ஒட்டுமொத்த தேசமும் வளர்ந்த இந்தியாவை நோக்கி முன்னேறுகிறது.”",
+    servicesEyebrow: "சஹாய்-AI இன் முக்கிய சேவைகள்",
+    servicesTitle: "நேரடி நிறுவன கடன் மற்றும் தொழில் வழிகாட்டுதல்",
+    schemeCardDesc: "நீங்கள் தகுதியான கடன் திட்டங்கள் மற்றும் உங்கள் மாதாந்திர தவணையை அறிந்து கொள்ளுங்கள்.",
+    schemeCardCta: "திட்டங்களைச் சரிபார்க்கவும்",
+    advisorCardDesc: "விண்ணப்பிக்கும் முன் உங்கள் தொழில் யோசனை உங்கள் பகுதியில் செயல்படுமா என்பதைச் சரிபார்க்கவும்.",
+    advisorCardCta: "தொழில் யோசனையை ஆய்வு செய்க",
+    companionCardDesc: "கடன் ஒப்புதலுக்குப் பின் மாதாந்திர தவணை மற்றும் ஆவணங்களை கண்காணிக்கவும்.",
+    companionCardCta: "கடன் வழிகாட்டியைத் திறக்க",
+    privacyTitle: "உங்கள் ஆவணங்கள் பாதுகாப்பாக உள்ளன",
+    privacyDesc: "ஆவணங்கள் இந்த சாதனத்தில் மட்டுமே செயலாக்கப்படுகின்றன. வெளி சேவையகங்களுக்கு எந்த ரகசிய தகவலும் அனுப்பப்படுவதில்லை.",
+    cscCta: "சி.எஸ்.சி உதவி எண்: 14599"
+  }
+};
+
 export default function HomePage() {
-  const [lang, setLang] = useState("hi");
+  // Default to English as requested
+  const [lang, setLang] = useState("en");
+  const [showLangModal, setShowLangModal] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
-  const t = translations[lang] || translations.hi;
+  const t = translations[lang] || translations.en;
+  const homeT = HOME_I18N[lang] || HOME_I18N.en;
+
+  // On page load: everytime someone opens the website (a new session), prompt with centered popup
+  useEffect(() => {
+    try {
+      const sessionChosen = sessionStorage.getItem("sahay-session-chosen");
+      const sessionLang = sessionStorage.getItem("sahay-session-lang");
+      if (sessionChosen && sessionLang) {
+        setLang(sessionLang);
+        setShowLangModal(false);
+      } else {
+        // Fresh opening of the site: default to English, prompt user with language selection popup
+        setLang("en");
+        setShowLangModal(true);
+      }
+    } catch (e) {
+      setLang("en");
+      setShowLangModal(true);
+    }
+
+    const handleLangChange = (e) => {
+      if (e.detail) {
+        setLang(e.detail);
+      }
+    };
+    window.addEventListener("sahay-language-change", handleLangChange);
+    return () => window.removeEventListener("sahay-language-change", handleLangChange);
+  }, []);
+
+  const handleSelectLanguage = (code) => {
+    setLang(code);
+    try {
+      sessionStorage.setItem("sahay-session-lang", code);
+      sessionStorage.setItem("sahay-session-chosen", "true");
+      localStorage.setItem("sahay-preferred-lang", code);
+      window.dispatchEvent(new CustomEvent("sahay-language-change", { detail: code }));
+    } catch (e) {}
+    setShowLangModal(false);
+  };
+
+  const handleCloseModal = () => {
+    try {
+      sessionStorage.setItem("sahay-session-lang", lang);
+      sessionStorage.setItem("sahay-session-chosen", "true");
+      localStorage.setItem("sahay-preferred-lang", lang);
+      window.dispatchEvent(new CustomEvent("sahay-language-change", { detail: lang }));
+    } catch (e) {}
+    setShowLangModal(false);
+  };
 
   // 3-second auto-slide interval
   useEffect(() => {
@@ -135,44 +273,67 @@ export default function HomePage() {
   const activeScheme = BANNER_SLIDES[currentSlide];
 
   return (
-    <div className="min-h-screen bg-surface text-on-surface font-sans selection:bg-primary-fixed selection:text-on-primary-fixed">
+    <div className="min-h-screen bg-surface text-on-surface font-sans selection:bg-primary-fixed selection:text-on-primary-fixed relative overflow-hidden">
       <Navbar activePage="home" lang={lang} setLang={setLang} />
 
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 pb-24">
+      {/* Upper Lotus Flower Accents framing the Hero */}
+      <LeftLotus className="absolute -left-6 sm:left-0 top-24 sm:top-28 w-44 sm:w-64 md:w-80 lg:w-[420px] transition-opacity z-0 animate-fade-in pointer-events-none select-none" opacity={0.3} />
+      <RightLotus className="absolute -right-8 sm:right-0 top-20 sm:top-24 w-52 sm:w-72 md:w-96 lg:w-[500px] transition-opacity z-0 animate-fade-in pointer-events-none select-none" opacity={0.3} />
 
-        {/* Hero Top Title */}
-        <div className="text-center max-w-3xl mx-auto mb-8">
-          <h1 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-[#221a10] leading-tight mb-4">
-            {lang === "en"
-              ? "Loan Schemes & Business Advice for Rural Entrepreneurs"
-              : "ग्रामीण उद्यमियों हेतु ऋण योजना एवं व्यापार सलाह"}
+      {/* Middle Lotus Flower Accents framing the Services Section */}
+      <LeftLotus className="absolute -left-10 md:-left-6 lg:left-0 top-[46%] sm:top-[44%] w-48 sm:w-64 md:w-80 lg:w-[440px] transition-opacity z-0 animate-fade-in pointer-events-none select-none" opacity={0.25} />
+      <RightLotus className="absolute -right-12 md:-right-8 lg:right-0 top-[64%] sm:top-[60%] w-56 sm:w-72 md:w-96 lg:w-[480px] transition-opacity z-0 animate-fade-in pointer-events-none select-none" opacity={0.25} />
+
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-36 sm:pt-44 lg:pt-48 pb-36 sm:pb-48 lg:pb-60 relative z-10">
+
+        {/* Hero Top Title with generous breathing room and smooth entrance */}
+        <div className="text-center max-w-4xl mx-auto mb-24 sm:mb-32 lg:mb-36 animate-fade-in-up">
+          <h1 className="font-libertinus font-serif text-4xl sm:text-5xl md:text-6xl lg:text-[68px] font-normal tracking-tight text-[#221a10] leading-[1.14] mb-8">
+            {homeT.heroTitle}
           </h1>
 
-          <p className="font-sans text-base text-[#514536] max-w-xl mx-auto leading-relaxed">
-            {lang === "en"
-              ? "Find out which government loan scheme fits you, how much you can borrow, and whether your business idea will work in your area."
-              : "जानें कि आपके लिए कौन सी सरकारी ऋण योजना उपयुक्त है, आप कितना ऋण ले सकते हैं, और आपका व्यापार विचार आपके क्षेत्र में सफल होगा या नहीं।"}
+          <p className="font-sans text-base sm:text-lg lg:text-xl text-[#514536] max-w-2xl mx-auto leading-relaxed mb-8">
+            {homeT.heroSub}
           </p>
+
+          {/* Quick Language Switcher Trigger Pill */}
+          <div className="flex items-center justify-center">
+            <button
+              type="button"
+              onClick={() => setShowLangModal(true)}
+              className="inline-flex items-center gap-2 px-4 py-1.5 bg-[#fbebda]/80 hover:bg-[#fbebda] text-[#845400] border border-[#d6c4b1] rounded-full text-xs font-mono font-medium shadow-2xs hover:shadow-xs transition-all cursor-pointer"
+            >
+              <span className="material-symbols-outlined text-[16px]">translate</span>
+              <span>{homeT.changeLang}: <strong className="text-[#221a10]">{LANGUAGES.find((l) => l.code === lang)?.native}</strong></span>
+              <span className="material-symbols-outlined text-[14px]">expand_more</span>
+            </button>
+          </div>
         </div>
 
         {/* ========================================================================= */}
         {/* LARGE CINEMATIC SHOWCASE BANNER (Full Div, No Borders, Edge-to-Edge)      */}
         {/* ========================================================================= */}
         <section
-          className="mb-14 flex flex-col gap-4"
+          className="mb-32 sm:mb-40 lg:mb-52 flex flex-col gap-6 sm:gap-8 animate-fade-in-up delay-100"
           onMouseEnter={() => setIsPaused(true)}
           onMouseLeave={() => setIsPaused(false)}
         >
-          {/* 1. Main Large Full-Div Banner Container (No borders, 100% full cover) */}
+          {/* 1. Main Large Full-Div Banner Container with smooth image cross-fade */}
           <div className="relative w-full h-[320px] sm:h-[420px] md:h-[480px] lg:h-[520px] rounded-2xl sm:rounded-3xl shadow-xl overflow-hidden flex items-center justify-center bg-stone-900">
 
-            {/* Main High-Resolution Banner Image filling 100% of the div */}
-            <img
-              key={activeScheme.src}
-              src={activeScheme.src}
-              alt={activeScheme.alt}
-              className="absolute inset-0 w-full h-full object-cover transition-all duration-700 ease-out"
-            />
+            {/* Smooth Cross-Fade Image Slider */}
+            {BANNER_SLIDES.map((slide, idx) => (
+              <img
+                key={slide.id}
+                src={slide.src}
+                alt={slide.alt}
+                className={`absolute inset-0 w-full h-full object-cover transition-all duration-1000 ease-out ${
+                  currentSlide === idx
+                    ? "opacity-100 scale-100 z-10"
+                    : "opacity-0 scale-105 pointer-events-none z-0"
+                }`}
+              />
+            ))}
 
             {/* Subtle Gradient Overlay for Bottom Details Contrast */}
             <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-black/85 via-black/35 to-transparent z-20 pointer-events-none" />
@@ -181,7 +342,7 @@ export default function HomePage() {
             <button
               onClick={prevSlide}
               aria-label="Previous Slide"
-              className="absolute left-3 sm:left-5 top-1/2 -translate-y-1/2 w-10 h-10 sm:w-12 sm:h-12 bg-white/90 hover:bg-white text-stone-900 rounded-full flex items-center justify-center shadow-2xl backdrop-blur-md transition-all duration-200 hover:scale-110 z-30 cursor-pointer"
+              className="absolute left-3 sm:left-5 top-1/2 -translate-y-1/2 w-10 h-10 sm:w-12 sm:h-12 bg-white/90 hover:bg-white text-stone-900 rounded-full flex items-center justify-center shadow-2xl backdrop-blur-md transition-all duration-300 hover:scale-110 z-30 cursor-pointer"
             >
               <span className="material-symbols-outlined text-[24px]">chevron_left</span>
             </button>
@@ -190,7 +351,7 @@ export default function HomePage() {
             <button
               onClick={nextSlide}
               aria-label="Next Slide"
-              className="absolute right-3 sm:right-5 top-1/2 -translate-y-1/2 w-10 h-10 sm:w-12 sm:h-12 bg-white/90 hover:bg-white text-stone-900 rounded-full flex items-center justify-center shadow-2xl backdrop-blur-md transition-all duration-200 hover:scale-110 z-30 cursor-pointer"
+              className="absolute right-3 sm:right-5 top-1/2 -translate-y-1/2 w-10 h-10 sm:w-12 sm:h-12 bg-white/90 hover:bg-white text-stone-900 rounded-full flex items-center justify-center shadow-2xl backdrop-blur-md transition-all duration-300 hover:scale-110 z-30 cursor-pointer"
             >
               <span className="material-symbols-outlined text-[24px]">chevron_right</span>
             </button>
@@ -201,7 +362,7 @@ export default function HomePage() {
               {/* Bottom Left Pill Badge */}
               <div className="hidden sm:flex items-center gap-2 bg-black/60 backdrop-blur-md px-4 py-1.5 rounded-full text-white font-bold tracking-wide shadow-md">
                 <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
-                <span>{activeScheme.badgeLeft[lang] || activeScheme.badgeLeft.hi}</span>
+                <span>{activeScheme.badgeLeft[lang] || activeScheme.badgeLeft.en || activeScheme.badgeLeft.hi}</span>
               </div>
 
               {/* Bottom Center Pagination Indicators */}
@@ -211,204 +372,273 @@ export default function HomePage() {
                     key={slide.id}
                     onClick={() => setCurrentSlide(idx)}
                     aria-label={`Go to slide ${idx + 1}`}
-                    className={`transition-all duration-300 cursor-pointer rounded-full ${currentSlide === idx
-                      ? "w-7 h-2.5 bg-amber-400"
-                      : "w-2.5 h-2.5 bg-white/50 hover:bg-white"
-                      }`}
+                    className={`transition-all duration-300 cursor-pointer rounded-full ${
+                      currentSlide === idx
+                        ? "w-7 h-2.5 bg-amber-400"
+                        : "w-2.5 h-2.5 bg-white/50 hover:bg-white"
+                    }`}
                   />
                 ))}
               </div>
 
               {/* Bottom Right Specification Badge */}
               <div className="hidden md:flex items-center gap-1.5 bg-black/60 backdrop-blur-md px-4 py-1.5 rounded-full text-stone-100 font-semibold text-[11px] tracking-wider uppercase shadow-md">
-                <span>{activeScheme.badgeRight[lang] || activeScheme.badgeRight.hi}</span>
+                <span>{activeScheme.badgeRight[lang] || activeScheme.badgeRight.en || activeScheme.badgeRight.hi}</span>
               </div>
             </div>
-          </div>
-
-          {/* ========================================================================= */}
-          {/* 2. UNDER-THE-IMAGE SCHEME DETAILS STRIP (Updates Every 3 Seconds)         */}
-          {/* ========================================================================= */}
-          <div className="bg-[#fff8f3] rounded-2xl sm:rounded-3xl p-5 sm:p-7 shadow-sm flex flex-col gap-5 transition-all duration-500">
-
-            {/* Top Scheme Name & Action Row */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-[#d6c4b1]/60">
-              <div className="flex flex-col gap-1.5">
-                <div className="flex items-center gap-2">
-                  <span className="px-2.5 py-0.5 bg-[#845400] text-white text-[11px] font-mono font-bold uppercase tracking-wider rounded-full">
-                    {lang === "en" ? "Active Scheme Details" : "वर्तमान चयनित योजना"}
-                  </span>
-                  <span className="text-xs font-mono text-[#845400] font-semibold">
-                    [ {currentSlide + 1} of {BANNER_SLIDES.length} • Auto 3s ]
-                  </span>
-                </div>
-
-                <h2 className="font-serif text-2xl sm:text-3xl font-black text-[#221a10] tracking-tight">
-                  {activeScheme.title[lang] || activeScheme.title.hi}
-                </h2>
-
-                <p className="font-sans text-sm sm:text-base text-[#514536] max-w-3xl leading-relaxed">
-                  {activeScheme.subtitle[lang] || activeScheme.subtitle.hi}
-                </p>
-              </div>
-
-              {/* Primary Call to Action Button */}
-              <div className="flex-shrink-0">
-                <Link
-                  href={activeScheme.link}
-                  className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-[#845400] hover:bg-[#6b4400] text-white text-sm font-mono font-bold uppercase tracking-wider transition-all rounded-xl shadow-md hover:shadow-lg"
-                >
-                  <span>{lang === "en" ? "Check Eligibility & EMI" : "पात्रता व किश्त जांचें"}</span>
-                  <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
-                </Link>
-              </div>
-            </div>
-
-            {/* Bottom 4 Feature Highlight Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {activeScheme.features.map((feat, idx) => (
-                <div
-                  key={idx}
-                  className="bg-white hover:bg-[#fffae8] p-3.5 rounded-xl flex items-center gap-3 transition-colors shadow-xs"
-                >
-                  <div className="w-9 h-9 rounded-lg bg-[#ffddb5] text-[#845400] flex items-center justify-center flex-shrink-0">
-                    <span className="material-symbols-outlined text-[20px]">{feat.icon}</span>
-                  </div>
-                  <span className="font-sans text-xs sm:text-sm font-bold text-[#221a10] leading-snug">
-                    {feat.label[lang] || feat.label.hi}
-                  </span>
-                </div>
-              ))}
-            </div>
-
-            {/* Quick Scheme Jump Selector Ribbon */}
-            <div className="pt-2 flex flex-wrap items-center justify-between gap-2 border-t border-[#d6c4b1]/40 text-xs font-mono">
-              <span className="text-[#845400] font-bold">
-                {lang === "en" ? "Quick Schemes:" : "त्वरित योजना चयन:"}
-              </span>
-              <div className="flex flex-wrap items-center gap-1.5">
-                {BANNER_SLIDES.map((slide, idx) => (
-                  <button
-                    key={slide.id}
-                    onClick={() => setCurrentSlide(idx)}
-                    className={`px-3.5 py-1 rounded-full text-xs font-bold transition-all cursor-pointer ${currentSlide === idx
-                      ? "bg-[#845400] text-white shadow-xs"
-                      : "bg-white text-[#514536] hover:bg-[#fbebda] shadow-2xs"
-                      }`}
-                  >
-                    {slide.tabName[lang] || slide.tabName.hi}
-                  </button>
-                ))}
-              </div>
-            </div>
-
           </div>
         </section>
 
-        {/* Three Services Feature Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+        {/* ========================================================================= */}
+        {/* INSPIRING VIKSIT BHARAT QUOTE SECTION (Spacious and Serene)               */}
+        {/* ========================================================================= */}
+        <section className="my-28 sm:my-36 lg:my-48 max-w-4xl mx-auto text-center px-4 sm:px-6 animate-fade-in-up delay-200">
+          <div className="inline-flex items-center justify-center gap-3 mb-6">
+            <span className="h-px w-12 bg-[#d6c4b1]"></span>
+            <span className="font-mono text-xs uppercase tracking-widest text-[#845400] font-semibold">
+              {homeT.visionBadge}
+            </span>
+            <span className="h-px w-12 bg-[#d6c4b1]"></span>
+          </div>
 
-          <Link
-            href="/scheme-matcher"
-            className="bg-white border border-[#d6c4b1] hover:border-[#845400] p-7 rounded-none transition-colors flex flex-col justify-between"
-          >
-            <div>
-              <div className="w-12 h-12 rounded-none bg-[#ffddb5] text-[#845400] flex items-center justify-center mb-5 border border-[#d6c4b1]">
-                <span className="material-symbols-outlined text-[28px]">account_balance</span>
-              </div>
-              <h2 className="font-serif text-xl font-bold text-[#221a10] mb-2">
-                {t.navSchemes}
-              </h2>
-              <p className="text-sm text-[#514536] leading-relaxed mb-5 font-sans">
-                {lang === "en"
-                  ? "See which loan schemes you qualify for and your monthly payment."
-                  : "जानें आप किन ऋण योजनाओं के पात्र हैं और आपकी मासिक किश्त कितनी होगी।"}
-              </p>
-            </div>
-            <div className="flex items-center text-sm font-bold text-[#845400] font-sans">
-              <span>{lang === "en" ? "Check schemes" : "योजना मिलान करें"}</span>
-              <span className="material-symbols-outlined text-[18px] ml-1">arrow_forward</span>
-            </div>
-          </Link>
+          <h2 className="font-libertinus font-serif text-3xl sm:text-4xl md:text-5xl lg:text-[54px] font-normal text-[#221a10] tracking-tight leading-tight mb-6 sm:mb-8">
+            {homeT.quoteHeading}
+          </h2>
 
-          <Link
-            href="/business-advisor"
-            className="bg-white border border-[#d6c4b1] hover:border-[#4d6537] p-7 rounded-none transition-colors flex flex-col justify-between"
-          >
-            <div>
-              <div className="w-12 h-12 rounded-none bg-[#cfecb1] text-[#4d6537] flex items-center justify-center mb-5 border border-[#d6c4b1]">
-                <span className="material-symbols-outlined text-[28px]">trending_up</span>
-              </div>
-              <h2 className="font-serif text-xl font-bold text-[#221a10] mb-2">
-                {t.navAdvisor}
-              </h2>
-              <p className="text-sm text-[#514536] leading-relaxed mb-5 font-sans">
-                {lang === "en"
-                  ? "Check if your business idea will work in your area before you apply."
-                  : "आवेदन करने से पहले जानें कि आपका व्यापार विचार आपके क्षेत्र में सफल होगा या नहीं।"}
-              </p>
-            </div>
-            <div className="flex items-center text-sm font-bold text-[#4d6537] font-sans">
-              <span>{lang === "en" ? "Check my business idea" : "व्यापार विश्लेषण देखें"}</span>
-              <span className="material-symbols-outlined text-[18px] ml-1">arrow_forward</span>
-            </div>
-          </Link>
+          <p className="font-serif italic text-base sm:text-lg lg:text-xl text-[#6b5e50] max-w-3xl mx-auto leading-relaxed">
+            {homeT.quoteText}
+          </p>
+        </section>
 
-          <Link
-            href="/companion"
-            className="bg-white border border-[#d6c4b1] hover:border-[#486172] p-7 rounded-none transition-colors flex flex-col justify-between"
-          >
-            <div>
-              <div className="w-12 h-12 rounded-none bg-[#cce6fa] text-[#486172] flex items-center justify-center mb-5 border border-[#d6c4b1]">
-                <span className="material-symbols-outlined text-[28px]">handshake</span>
-              </div>
-              <h2 className="font-serif text-xl font-bold text-[#221a10] mb-2">
-                {t.navCompanion}
-              </h2>
-              <p className="text-sm text-[#514536] leading-relaxed mb-5 font-sans">
-                {lang === "en"
-                  ? "Track your loan repayment and required documents after approval."
-                  : "स्वीकृति के बाद अपनी किश्त और आवश्यक दस्तावेज़ों पर नज़र रखें।"}
-              </p>
-            </div>
-            <div className="flex items-center text-sm font-bold text-[#486172] font-sans">
-              <span>{lang === "en" ? "Open my loan tracker" : "ऋण साथी खोलें"}</span>
-              <span className="material-symbols-outlined text-[18px] ml-1">arrow_forward</span>
-            </div>
-          </Link>
-
+        {/* ========================================================================= */}
+        {/* THREE SERVICES SECTION HEADER                                             */}
+        {/* ========================================================================= */}
+        <div className="mt-32 sm:mt-40 lg:mt-48 mb-14 sm:mb-18 text-center max-w-2xl mx-auto animate-fade-in-up delay-300">
+          <span className="px-3.5 py-1 bg-[#ffddb5] text-[#845400] text-[11px] sm:text-xs font-mono font-bold uppercase tracking-wider rounded-full inline-block mb-4">
+            {homeT.servicesEyebrow}
+          </span>
+          <h3 className="font-libertinus font-serif text-3xl sm:text-4xl lg:text-[42px] font-normal text-[#221a10] tracking-tight">
+            {homeT.servicesTitle}
+          </h3>
         </div>
 
-        {/* Footer notice — kept (the privacy point is genuinely
-            important), but without an unverified specific legal
-            citation and with the CORRECT CSC helpline number
-            (verified against the Dept. of Telecommunications' own
-            short-code allocation — the figure previously here,
-            1800-202-0044, was not the real CSC helpline and would
-            have sent someone calling for help nowhere). */}
-        <div className="mt-14 bg-[#fbebda] border border-[#d6c4b1] rounded-none p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <span className="material-symbols-outlined text-[#845400] text-[24px]">shield</span>
-            <div>
-              <p className="font-serif font-bold text-sm text-[#221a10]">
-                {lang === "en" ? "Your documents stay private" : "आपके दस्तावेज़ सुरक्षित हैं"}
-              </p>
-              <p className="font-sans text-xs text-[#514536]">
-                {lang === "en"
-                  ? "Documents are processed on this device only. Nothing sensitive is sent to outside servers."
-                  : "आपके दस्तावेज केवल इसी उपकरण पर संसाधित होते हैं। कोई भी संवेदनशील जानकारी बाहरी सर्वर पर नहीं भेजी जाती।"}
-              </p>
-            </div>
-          </div>
-          <a
-            href="tel:14599"
-            className="text-xs font-mono font-bold text-[#845400] bg-white px-4 py-2 rounded-none border border-[#d6c4b1] whitespace-nowrap hover:border-[#845400] transition-colors"
+        {/* Three Services Feature Items in Natural 1-2-3 Workflow Order: Business -> Scheme -> Loan */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-10 sm:gap-12 lg:gap-16">
+
+          {/* STEP 1: Business Feasibility / Advisor */}
+          <Link
+            href="/business-advisor"
+            className="group flex flex-col justify-between transition-all duration-300 hover:-translate-y-1.5 animate-fade-in-up delay-300"
           >
-            {lang === "en" ? "CSC Helpline: 14599" : "सीएससी हेल्पलाइन: 14599"}
-          </a>
+            <div>
+              {/* Image Container with rounded corners and subtle shadow */}
+              <div className="relative w-full h-56 sm:h-60 lg:h-64 rounded-2xl overflow-hidden bg-stone-100 shadow-xs border border-[#e8dfcf]/60">
+                <img
+                  src="/business.jpg"
+                  alt={t.navAdvisor}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                />
+                <span className="absolute top-3 left-3 px-3 py-1 bg-[#4d6537] text-white text-[11px] font-mono font-bold uppercase rounded-full shadow-md">
+                  {lang === "en" ? "Step 1: Business Feasibility" : "चरण 1: व्यवसाय व्यवहार्यता"}
+                </span>
+              </div>
+
+              {/* Title & Description sitting directly on the page background */}
+              <div className="pt-6 pb-3">
+                <h3 className="font-libertinus font-serif text-2xl sm:text-[26px] font-normal text-[#221a10] mb-3 group-hover:text-[#4d6537] transition-colors">
+                  {t.navAdvisor}
+                </h3>
+                <p className="text-sm sm:text-base text-[#514536] leading-relaxed font-sans">
+                  {homeT.advisorCardDesc}
+                </p>
+              </div>
+            </div>
+
+            {/* Bottom Arrow Action directly on page background */}
+            <div className="pt-3 flex items-center text-sm font-bold text-[#4d6537] font-sans group-hover:translate-x-1.5 transition-transform">
+              <span>{homeT.advisorCardCta}</span>
+              <span className="material-symbols-outlined text-[18px] ml-1.5">arrow_forward</span>
+            </div>
+          </Link>
+
+          {/* STEP 2: Scheme Matcher */}
+          <Link
+            href="/scheme-matcher"
+            className="group flex flex-col justify-between transition-all duration-300 hover:-translate-y-1.5 animate-fade-in-up delay-400"
+          >
+            <div>
+              {/* Image Container with rounded corners and subtle shadow */}
+              <div className="relative w-full h-56 sm:h-60 lg:h-64 rounded-2xl overflow-hidden bg-stone-100 shadow-xs border border-[#e8dfcf]/60">
+                <img
+                  src="/Scheme.png"
+                  alt={t.navSchemes}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                />
+                <span className="absolute top-3 left-3 px-3 py-1 bg-[#845400] text-white text-[11px] font-mono font-bold uppercase rounded-full shadow-md">
+                  {lang === "en" ? "Step 2: Scheme Matcher" : "चरण 2: योजना चयन"}
+                </span>
+              </div>
+
+              {/* Title & Description sitting directly on the page background */}
+              <div className="pt-6 pb-3">
+                <h3 className="font-libertinus font-serif text-2xl sm:text-[26px] font-normal text-[#221a10] mb-3 group-hover:text-[#845400] transition-colors">
+                  {t.navSchemes}
+                </h3>
+                <p className="text-sm sm:text-base text-[#514536] leading-relaxed font-sans">
+                  {homeT.schemeCardDesc}
+                </p>
+              </div>
+            </div>
+
+            {/* Bottom Arrow Action directly on page background */}
+            <div className="pt-3 flex items-center text-sm font-bold text-[#845400] font-sans group-hover:translate-x-1.5 transition-transform">
+              <span>{homeT.schemeCardCta}</span>
+              <span className="material-symbols-outlined text-[18px] ml-1.5">arrow_forward</span>
+            </div>
+          </Link>
+
+          {/* STEP 3: Loan Companion */}
+          <Link
+            href="/companion"
+            className="group flex flex-col justify-between transition-all duration-300 hover:-translate-y-1.5 animate-fade-in-up delay-500"
+          >
+            <div>
+              {/* Image Container with rounded corners and subtle shadow */}
+              <div className="relative w-full h-56 sm:h-60 lg:h-64 rounded-2xl overflow-hidden bg-stone-100 shadow-xs border border-[#e8dfcf]/60">
+                <img
+                  src="/rup.jpg"
+                  alt={t.navCompanion}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                />
+                <span className="absolute top-3 left-3 px-3 py-1 bg-[#486172] text-white text-[11px] font-mono font-bold uppercase rounded-full shadow-md">
+                  {lang === "en" ? "Step 3: Loan Companion" : "चरण 3: दैनिक ऋण साथी"}
+                </span>
+              </div>
+
+              {/* Title & Description sitting directly on the page background */}
+              <div className="pt-6 pb-3">
+                <h3 className="font-libertinus font-serif text-2xl sm:text-[26px] font-normal text-[#221a10] mb-3 group-hover:text-[#486172] transition-colors">
+                  {t.navCompanion}
+                </h3>
+                <p className="text-sm sm:text-base text-[#514536] leading-relaxed font-sans">
+                  {homeT.companionCardDesc}
+                </p>
+              </div>
+            </div>
+
+            {/* Bottom Arrow Action directly on page background */}
+            <div className="pt-3 flex items-center text-sm font-bold text-[#486172] font-sans group-hover:translate-x-1.5 transition-transform">
+              <span>{homeT.companionCardCta}</span>
+              <span className="material-symbols-outlined text-[18px] ml-1.5">arrow_forward</span>
+            </div>
+          </Link>
+
         </div>
 
       </main>
+
+      {/* ========================================================================= */}
+      {/* CENTERED LANGUAGE SELECTION POPUP MODAL                                   */}
+      {/* ========================================================================= */}
+      {showLangModal && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/60 backdrop-blur-xs animate-fade-in"
+        >
+          {/* Backdrop click to dismiss */}
+          <div
+            className="absolute inset-0"
+            onClick={handleCloseModal}
+            aria-hidden="true"
+          />
+
+          <div
+            className="relative w-full max-w-lg bg-[#fffdfa] rounded-3xl shadow-2xl border-2 border-[#d6c4b1] p-6 sm:p-8 z-10 animate-fade-in-up overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Subtle decorative radial gradients */}
+            <div className="absolute -top-12 -right-12 w-40 h-40 bg-[#ffddb5]/30 rounded-full blur-2xl pointer-events-none" />
+            <div className="absolute -bottom-12 -left-12 w-40 h-40 bg-[#cbe3cb]/30 rounded-full blur-2xl pointer-events-none" />
+
+            {/* Modal Header */}
+            <div className="flex items-start justify-between gap-4 mb-6 relative z-10">
+              <div className="flex items-center gap-3.5">
+                <div className="w-12 h-12 rounded-2xl bg-[#fbebda] border border-[#d6c4b1] flex items-center justify-center text-[#845400] shadow-xs shrink-0">
+                  <span className="material-symbols-outlined text-[26px]">translate</span>
+                </div>
+                <div>
+                  <h2 className="font-libertinus font-serif text-2xl sm:text-3xl font-normal text-[#221a10] leading-tight">
+                    Select Your Language
+                  </h2>
+                  <p className="font-sans text-xs sm:text-sm text-[#726250] mt-0.5">
+                    अपनी भाषा चुनें • Choose preferred language
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleCloseModal}
+                className="w-9 h-9 rounded-full bg-stone-100 hover:bg-stone-200 text-stone-600 flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                aria-label="Close language selection modal"
+              >
+                <span className="material-symbols-outlined text-[20px]">close</span>
+              </button>
+            </div>
+
+            {/* Language Selection Grid */}
+            <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-6 relative z-10">
+              {LANGUAGES.map((item) => {
+                const isSelected = lang === item.code;
+                return (
+                  <button
+                    key={item.code}
+                    type="button"
+                    onClick={() => handleSelectLanguage(item.code)}
+                    className={`flex flex-col items-start p-4 rounded-2xl border-2 text-left transition-all duration-200 cursor-pointer relative group ${
+                      isSelected
+                        ? "bg-[#fff5e9] border-[#845400] shadow-sm ring-1 ring-[#845400]"
+                        : "bg-white border-[#e8dfcf] hover:border-[#845400]/60 hover:bg-[#fffbf6] hover:shadow-xs"
+                    }`}
+                  >
+                    {/* Active Checkmark Pill */}
+                    {isSelected && (
+                      <span className="absolute top-3 right-3 w-5 h-5 rounded-full bg-[#845400] text-white flex items-center justify-center shadow-xs">
+                        <span className="material-symbols-outlined text-[13px] font-bold">check</span>
+                      </span>
+                    )}
+
+                    <span className="text-xl mb-1.5">{item.flag}</span>
+                    <span className="font-serif text-lg sm:text-xl font-normal text-[#221a10] group-hover:text-[#845400] transition-colors leading-tight">
+                      {item.native}
+                    </span>
+                    <span className="font-sans text-xs text-[#726250] mt-0.5">
+                      {item.label} {item.code === "en" ? "(Default)" : ""}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Modal Bottom / Confirmation bar */}
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-[#e8dfcf] relative z-10">
+              <span className="text-xs text-[#726250] font-sans text-center sm:text-left">
+                Selected: <strong className="text-[#221a10]">{LANGUAGES.find((l) => l.code === lang)?.native}</strong> (Change anytime in top menu)
+              </span>
+
+              <button
+                type="button"
+                onClick={() => handleSelectLanguage(lang)}
+                className="w-full sm:w-auto px-6 py-2.5 bg-[#845400] hover:bg-[#6c4400] text-white text-sm font-semibold rounded-xl shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <span>Continue • आगे बढ़ें</span>
+                <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState, useRef } from "react";
 import { blobToWavBase64 } from "../lib/wavEncoder";
 
@@ -17,6 +19,8 @@ const LABELS = {
 export default function VoiceInputButton({ fields, language = "hi", onResult, onTranscript, size = "large" }) {
     const [state, setState] = useState("idle"); // idle | recording | busy | error
     const mediaRecorderRef = useRef(null);
+    const recognitionRef = useRef(null);
+    const browserTranscriptRef = useRef("");
     const chunksRef = useRef([]);
     const maxTimerRef = useRef(null);
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -24,6 +28,34 @@ export default function VoiceInputButton({ fields, language = "hi", onResult, on
 
     const startRecording = async () => {
         try {
+            browserTranscriptRef.current = "";
+
+            // Initialize browser Web Speech API concurrently as resilient fallback
+            const SpeechRec = typeof window !== "undefined" ? (window.SpeechRecognition || window.webkitSpeechRecognition) : null;
+            if (SpeechRec) {
+                try {
+                    const recognition = new SpeechRec();
+                    recognition.continuous = true;
+                    recognition.interimResults = true;
+                    const langMap = { hi: "hi-IN", mr: "mr-IN", ta: "ta-IN", en: "en-IN" };
+                    recognition.lang = langMap[language] || "hi-IN";
+                    recognition.onresult = (event) => {
+                        let text = "";
+                        for (let i = 0; i < event.results.length; ++i) {
+                            text += event.results[i][0].transcript + " ";
+                        }
+                        if (text.trim()) {
+                            browserTranscriptRef.current = text.trim();
+                        }
+                    };
+                    recognition.onerror = () => {};
+                    recognition.start();
+                    recognitionRef.current = recognition;
+                } catch (e) {
+                    console.debug("Web Speech API not started:", e);
+                }
+            }
+
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             // Use a format this browser can actually record: Chrome/Firefox do WebM, Safari
             // only does MP4. Forcing "audio/webm" made recording fail outright on iPhones.
@@ -50,34 +82,59 @@ export default function VoiceInputButton({ fields, language = "hi", onResult, on
 
     const stopRecording = () => {
         clearTimeout(maxTimerRef.current);
+        if (recognitionRef.current) {
+            try { recognitionRef.current.stop(); } catch (e) {}
+        }
         if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") mediaRecorderRef.current.stop();
     };
 
     const handleRecordingComplete = async (stream, mimeType) => {
         clearTimeout(maxTimerRef.current);
         stream.getTracks().forEach((tr) => tr.stop());
+        if (recognitionRef.current) {
+            try { recognitionRef.current.stop(); } catch (e) {}
+        }
         setState("busy");
         try {
-            const blob = new Blob(chunksRef.current, { type: mimeType });
-            if (blob.size < 1500) throw new Error("Recording too short"); // tapped start/stop with nothing said
-            // Bhashini is told the audio is 16 kHz WAV, so convert before sending.
-            const base64Audio = await blobToWavBase64(blob, 16000);
+            let finalTranscript = "";
 
-            const transcribeRes = await fetch(`${apiUrl}/api/voice/transcribe`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ audio_base64: base64Audio, language }),
-            });
-            const transcribeData = await transcribeRes.json();
-            if (!transcribeData.available || !transcribeData.transcript) {
-                throw new Error(transcribeData.message || "No transcript returned");
+            // Attempt 1: Bhashini Indic ASR pipeline
+            try {
+                const blob = new Blob(chunksRef.current, { type: mimeType });
+                if (blob.size >= 1000) {
+                    const base64Audio = await blobToWavBase64(blob, 16000);
+                    const transcribeRes = await fetch(`${apiUrl}/api/voice/transcribe`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ audio_base64: base64Audio, language }),
+                    });
+                    if (transcribeRes.ok) {
+                        const transcribeData = await transcribeRes.json();
+                        if (transcribeData.available && transcribeData.transcript) {
+                            finalTranscript = transcribeData.transcript;
+                        }
+                    }
+                }
+            } catch (asrErr) {
+                console.debug("Bhashini ASR unavailable, falling back to browser transcript:", asrErr);
             }
-            if (onTranscript) onTranscript(transcribeData.transcript);
 
+            // Attempt 2: Fall back to Web Speech API transcript if Bhashini didn't return text
+            if (!finalTranscript && browserTranscriptRef.current) {
+                finalTranscript = browserTranscriptRef.current.trim();
+            }
+
+            if (!finalTranscript) {
+                throw new Error("No speech heard, please try again");
+            }
+
+            if (onTranscript) onTranscript(finalTranscript);
+
+            // Step 2: Groq structured field intent extraction
             const parseRes = await fetch(`${apiUrl}/api/voice/parse-intent`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ transcript: transcribeData.transcript, fields, language }),
+                body: JSON.stringify({ transcript: finalTranscript, fields, language }),
             });
             const parseData = await parseRes.json();
             if (!parseData.available || !parseData.values) {
@@ -87,7 +144,7 @@ export default function VoiceInputButton({ fields, language = "hi", onResult, on
             onResult(parseData.values);
             setState("idle");
         } catch (e) {
-            console.warn("Voice input failed:", e.message);
+            console.warn("Voice input notice:", e.message);
             setState("error");
             setTimeout(() => setState("idle"), 2500);
         }

@@ -52,6 +52,8 @@ FIND_NEAREST_ELIGIBLE_SQL = """
 SELECT
     id, branch_name, institution_name, institution_type, ifsc_code,
     district, block, fund_quota_remaining, is_solvent,
+    ST_Y(location::geometry) AS lat,
+    ST_X(location::geometry) AS lon,
     ST_Distance(location, ST_MakePoint(%(lon)s, %(lat)s)::geography) AS distance_meters
 FROM channel_partners
 WHERE
@@ -181,6 +183,8 @@ class PartnerMatch:
     is_solvent: bool
     routing_status: str
     routing_explanation: str
+    lat: float = 0.0
+    lon: float = 0.0
 
 
 @dataclass
@@ -191,6 +195,7 @@ class RoutingResult:
     allocated_partner: Optional[PartnerMatch]
     backup_partners: List[PartnerMatch] = field(default_factory=list)
     bypassed_branches_audit: List[Dict[str, str]] = field(default_factory=list)
+    engine_mode: str = "in_memory"
 
 
 # ---------------------------------------------------------------------------
@@ -228,10 +233,14 @@ def route_application(
             distance_km=round(row["distance_meters"] / 1000.0, 2),
             fund_quota_remaining=float(row["fund_quota_remaining"]), is_solvent=row["is_solvent"],
             routing_status="BACKUP_OPTION", routing_explanation="",
+            lat=float(row.get("lat") or 0.0),
+            lon=float(row.get("lon") or 0.0),
         )
         for row in rows
     ]
-    return _package_routing_result(applicant_lat, applicant_lon, scheme_code, loan_amount, matches)
+    res = _package_routing_result(applicant_lat, applicant_lon, scheme_code, loan_amount, matches)
+    res.engine_mode = "postgis"
+    return res
 
 
 def toggle_branch_status(branch_id: int, is_solvent: bool, fund_quota_remaining: Optional[float] = None) -> None:
@@ -304,12 +313,15 @@ def route_application_in_memory(
             district=b["district"], block=b["block"], distance_km=b["distance_km"],
             fund_quota_remaining=b["fund_quota_remaining"], is_solvent=b["is_solvent"],
             routing_status="BACKUP_OPTION", routing_explanation="",
+            lat=float(b.get("lat") or 0.0),
+            lon=float(b.get("lon") or 0.0),
         )
         for b in qualified[:limit]
     ]
 
     result = _package_routing_result(applicant_lat, applicant_lon, scheme_code, loan_amount, matches)
     result.bypassed_branches_audit = bypassed_audit
+    result.engine_mode = "in_memory"
     return result
 
 
@@ -321,6 +333,130 @@ def toggle_branch_status_in_memory(branch_name: str, is_solvent: bool, fund_quot
                 b["fund_quota_remaining"] = fund_quota_remaining
             return
     raise ValueError(f"Branch '{branch_name}' not found in in-memory registry.")
+
+
+# ---------------------------------------------------------------------------
+# Smart Router: Database-First with Seamless In-Memory Fallback
+# ---------------------------------------------------------------------------
+
+def smart_route_application(
+    applicant_lat: float,
+    applicant_lon: float,
+    scheme_code: str,
+    loan_amount: float,
+    limit: int = 3,
+) -> RoutingResult:
+    """Attempt PostGIS spatial routing if DATABASE_URL is set, otherwise fall back
+
+    cleanly to the in-memory Haversine spatial router.
+    """
+    dsn = os.environ.get("DATABASE_URL", "").strip()
+    if dsn:
+        try:
+            return route_application(
+                applicant_lat=applicant_lat,
+                applicant_lon=applicant_lon,
+                scheme_code=scheme_code,
+                loan_amount=loan_amount,
+                limit=limit,
+            )
+        except Exception as e:
+            import logging
+            logging.getLogger("spatial").warning(
+                f"PostGIS route failed ({e}), falling back to in-memory Haversine spatial router."
+            )
+
+    return route_application_in_memory(
+        applicant_lat=applicant_lat,
+        applicant_lon=applicant_lon,
+        scheme_code=scheme_code,
+        loan_amount=loan_amount,
+        limit=limit,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Database Status & PostGIS Setup Utilities
+# ---------------------------------------------------------------------------
+
+def check_db_status() -> Dict[str, Any]:
+    """Inspect connection to PostGIS database and report live status."""
+    dsn = os.environ.get("DATABASE_URL", "").strip()
+    if not dsn:
+        return {
+            "status": "not_configured",
+            "message": "DATABASE_URL is not set. Running on In-Memory Haversine Spatial Router (Zero-Dependency).",
+            "engine": "In-Memory Haversine Spatial Router",
+            "postgis_active": False,
+            "table_exists": False,
+            "branch_count": len(SEED_BRANCHES),
+            "instructions": "To connect real PostgreSQL/PostGIS, set DATABASE_URL in backend/.env (e.g. from Neon.tech, Supabase, or local PostgreSQL) and run: python backend/scripts/setup_postgis_db.py",
+        }
+    try:
+        import psycopg2
+        with psycopg2.connect(dsn, connect_timeout=3) as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT 1;")
+                cur.execute("SELECT extname, extversion FROM pg_extension WHERE extname = 'postgis';")
+                pg_ext = cur.fetchone()
+                postgis_active = bool(pg_ext)
+                postgis_version = pg_ext[1] if pg_ext else None
+
+                cur.execute("SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'channel_partners');")
+                table_exists = cur.fetchone()[0]
+
+                branch_count = 0
+                if table_exists:
+                    cur.execute("SELECT COUNT(*) FROM channel_partners;")
+                    branch_count = cur.fetchone()[0]
+
+                return {
+                    "status": "connected",
+                    "engine": "PostGIS (PostgreSQL Spatial Database)",
+                    "postgis_active": postgis_active,
+                    "postgis_version": postgis_version,
+                    "table_exists": table_exists,
+                    "branch_count": branch_count,
+                    "message": f"Successfully connected to PostGIS database with {branch_count} channel partner branches.",
+                }
+    except Exception as e:
+        return {
+            "status": "connection_error",
+            "engine": "In-Memory Haversine Spatial Router (Fallback Active)",
+            "error": str(e),
+            "postgis_active": False,
+            "table_exists": False,
+            "branch_count": len(SEED_BRANCHES),
+            "message": f"Database configured but connection failed: {e}. In-memory fallback is active.",
+        }
+
+
+def seed_postgis_database(dsn: Optional[str] = None) -> int:
+    """Create PostGIS extension, channel_partners table, GIST index, and seed branches."""
+    import psycopg2
+    target_dsn = dsn or os.environ.get("DATABASE_URL", "").strip()
+    if not target_dsn:
+        raise ValueError("DATABASE_URL is required to seed PostGIS database.")
+
+    with psycopg2.connect(target_dsn) as conn:
+        with conn.cursor() as cur:
+            cur.execute("CREATE EXTENSION IF NOT EXISTS postgis;")
+            cur.execute(SCHEMA_SQL)
+            cur.execute("TRUNCATE TABLE channel_partners RESTART IDENTITY;")
+            insert_sql = """
+            INSERT INTO channel_partners (
+                id, branch_name, institution_name, institution_type, ifsc_code,
+                district, block, location, serves_scheme_codes, fund_quota_remaining, is_solvent
+            ) VALUES (
+                %(id)s, %(branch_name)s, %(institution_name)s, %(institution_type)s, %(ifsc_code)s,
+                %(district)s, %(block)s, ST_SetSRID(ST_MakePoint(%(lon)s, %(lat)s), 4326)::geography,
+                %(serves_scheme_codes)s, %(fund_quota_remaining)s, %(is_solvent)s
+            );
+            """
+            for b in SEED_BRANCHES:
+                cur.execute(insert_sql, b)
+        conn.commit()
+    return len(SEED_BRANCHES)
 
 
 # ---------------------------------------------------------------------------

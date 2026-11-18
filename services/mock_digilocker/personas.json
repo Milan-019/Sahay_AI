@@ -1,0 +1,182 @@
+{
+  "personas": [
+    {
+      "id": "sunita_sahu",
+      "name": "Sunita Sahu",
+      "dob": "1988-06-15",
+      "gender": "F",
+      "mock_aadhaar": "2341-8901-5678",
+      "mobile": "9876543210",
+      "trade": "Rural Tailor & Artisan",
+      "scheme_target": "PMEGP / NSFDC Mahila Samridhi",
+      "digilocker_id": "DL-IN-8890-SAHU",
+      "demographic_hints": {
+        "is_women_entrepreneur": true,
+        "has_linked_caste_certificate": true,
+        "caste_category": "OBC"
+      },
+      "verified_documents": {
+        "aadhaar": true,
+        "pan": true,
+        "caste_certificate": true,
+        "income_certificate": false,
+        "udyam_registration": false
+      },
+      "issued_documents": [
+        {
+          "name": "Aadhaar Card",
+          "doctype": "ADHAR",
+          "issuer": "Unique Identification Authority of India (UIDAI)",
+          "issue_date": "2021-04-12",
+          "uri": "in.gov.uidai-ADHAR-234189015678",
+          "status": "VERIFIED",
+          "description": "Resident Aadhaar Identity with Demographic & Biometric Verification"
+        },
+        {
+          "name": "Permanent Account Number (PAN)",
+          "doctype": "PANCR",
+          "issuer": "Income Tax Department",
+          "issue_date": "2019-11-20",
+          "uri": "in.gov.pan-PANCR-BSHPS4512K",
+          "status": "VERIFIED",
+          "description": "Tax Identification Record"
+        },
+        {
+          "name": "Other Backward Class (OBC) Caste Certificate",
+          "doctype": "CASTC",
+          "issuer": "Revenue Department, Govt. of Chhattisgarh",
+          "issue_date": "2020-08-14",
+          "uri": "in.gov.cg.edistrict-CASTC-20200814981",
+          "status": "VERIFIED",
+          "description": "Social Category & Subvention Eligibility Record"
+        },
+        {
+          "name": "Ration Card (NFSA - Priority Household)",
+          "doctype": "RATION",
+          "issuer": "Department of Food & Public Distribution",
+          "issue_date": "2018-02-10",
+          "uri": "in.gov.nfsa-RATION-CG04910293",
+          "status": "VERIFIED",
+          "description": "Household Food Security & Address Proof"
+        }
+      ],
+      "missing_documents_note": "Physical Bank Passbook with branch seal and Machinery Quotations must be uploaded for OCR."
+    },
+    {
+      "id": "priya_sharma",
+      "name": "Priya Sharma",
+      "dob": "1992-08-15",
+      "gender": "F",
+      "mock_aadhaar": "9876-5432-1012",
+      "mobile": "9811223344",
+      "trade": "Boutique & Textile Entrepreneur",
+      "scheme_target": "Stand-Up India / PMEGP",
+      "digilocker_id": "DL-IN-9281-SHARMA",
+      "demographic_hints": {
+        "is_women_entrepreneur": true,
+        "has_linked_caste_certificate": true,
+        "caste_category": "SC"
+      },
+      "verified_documents": {
+        "aadhaar": true,
+        "pan": true,
+        "caste_certificate": true,
+        "income_certificate": true,
+        "udyam_registration": true
+      },
+      "issued_documents": [
+        {
+          "name": "Aadhaar Card",
+          "doctype": "ADHAR",
+          "issuer": "Unique Identification Authority of India (UIDAI)",
+          "issue_date": "2019-03-22",
+          "uri": "in.gov.uidai-ADHAR-987654321012",
+          "status": "VERIFIED",
+          "description": "Resident Aadhaar Identity Verification"
+        },
+        {
+          "name": "Permanent Account Number (PAN)",
+          "doctype": "PANCR",
+          "issuer": "Income Tax Department",
+          "issue_date": "2018-05-18",
+          "uri": "in.gov.pan-PANCR-APTPS9876M",
+          "status": "VERIFIED",
+          "description": "Individual PAN Card Verification Record"
+        },
+        {
+          "name": "Scheduled Caste (SC) Certificate",
+          "doctype": "CASTC",
+          "issuer": "Tahsildar Office, Revenue Dept, Govt. of Maharashtra",
+          "issue_date": "2017-09-04",
+          "uri": "in.gov.mh.edistrict-CASTC-MH98127391",
+          "status": "VERIFIED",
+          "description": "Affirmative Action Caste Verification"
+        },
+        {
+          "name": "Annual Family Income Certificate",
+          "doctype": "INCER",
+          "issuer": "Revenue & Land Reforms Dept",
+          "issue_date": "2023-06-11",
+          "uri": "in.gov.revenue-INCER-202391023",
+          "status": "VERIFIED",
+          "description": "Income Threshold Verification (Below ₹3.0 Lakh)"
+        },
+        {
+          "name": "Udyam MSME Registration Certificate",
+          "doctype": "UDYAM",
+          "issuer": "Ministry of Micro, Small and Medium Enterprises",
+          "issue_date": "2022-10-30",
+          "uri": "in.gov.msme-UDYAM-MH-02-0049182",
+          "status": "VERIFIED",
+          "description": "Formal Micro-Enterprise Registration Record"
+        }
+      ],
+      "missing_documents_note": "Bank Passbook (6-month statement) and Detailed Project Report (DPR) are physical documents."
+    },
+    {
+      "id": "ramesh_kumar",
+      "name": "Ramesh Kumar",
+      "dob": "1982-11-20",
+      "gender": "M",
+      "mock_aadhaar": "4512-7890-3456",
+      "mobile": "9845012345",
+      "trade": "Street Food & Micro-Retailer",
+      "scheme_target": "PM SVANidhi / Mudra Shishu",
+      "digilocker_id": "DL-IN-8211-KUMAR",
+      "demographic_hints": {
+        "is_women_entrepreneur": false,
+        "has_linked_caste_certificate": false,
+        "caste_category": "General"
+      },
+      "verified_documents": {
+        "aadhaar": true,
+        "pan": true,
+        "caste_certificate": false,
+        "income_certificate": false,
+        "udyam_registration": false
+      },
+      "issued_documents": [
+        {
+          "name": "Aadhaar Card",
+          "doctype": "ADHAR",
+          "issuer": "Unique Identification Authority of India (UIDAI)",
+          "issue_date": "2020-01-18",
+          "uri": "in.gov.uidai-ADHAR-451278903456",
+          "status": "VERIFIED",
+          "description": "Resident Aadhaar Identity Verification"
+        },
+        {
+          "name": "Permanent Account Number (PAN)",
+          "doctype": "PANCR",
+          "issuer": "Income Tax Department",
+          "issue_date": "2016-07-25",
+          "uri": "in.gov.pan-PANCR-BRKPK3412R",
+          "status": "VERIFIED",
+          "description": "Individual PAN Card Verification Record"
+        }
+      ],
+      "missing_documents_note": "Bank Passbook with QR UPI linkage and Urban Local Body (ULB) Vending Certificate require physical upload."
+    }
+  ]
+}
+
